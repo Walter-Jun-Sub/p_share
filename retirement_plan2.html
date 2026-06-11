@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>은퇴자금 계획 대시보드 v2</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --panel: #ffffff;
+    --border: #dfe3eb;
+    --accent: #2563eb;
+    --accent-soft: #e8f0fe;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --danger: #dc2626;
+    --good: #059669;
+    --pension: #7c3aed;
+    --pension-soft: #ede9fe;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+  }
+  header {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: #fff;
+    padding: 18px 24px;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p  { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 16px;
+    padding: 16px;
+    align-items: stretch;
+  }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .left-col { display: flex; flex-direction: column; gap: 14px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .panel h2 {
+    margin: 0 0 14px;
+    font-size: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel h2.pension-title { color: var(--pension); border-color: var(--pension-soft); }
+
+  .field { margin-bottom: 14px; }
+  .field:last-of-type { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  .field input[type="number"],
+  .field input[type="text"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .korean-display {
+    margin-top: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    min-height: 18px;
+    letter-spacing: -0.2px;
+  }
+  .korean-display.pension { color: var(--pension); }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .field-row .field { margin-bottom: 0; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .toggle-row input { width: 15px; height: 15px; flex-shrink: 0; }
+  .toggle-row label { margin: 0; font-size: 12px; color: var(--text); }
+
+  .pension-group {
+    background: var(--pension-soft);
+    border: 1px solid #c4b5fd;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .pension-group:last-of-type { margin-bottom: 0; }
+  .pension-group-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--pension);
+    margin-bottom: 10px;
+  }
+  .pension-group .field { margin-bottom: 10px; }
+  .pension-group .field:last-child { margin-bottom: 0; }
+  .pension-inline {
+    display: grid;
+    grid-template-columns: 1fr 90px;
+    gap: 8px;
+    align-items: start;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+  .btn:hover { opacity: 0.92; }
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; }
+  .btn-row .btn { margin-top: 0; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat { background: var(--accent-soft); border-radius: 8px; padding: 12px; }
+  .stat .k { font-size: 11px; color: var(--muted); }
+  .stat .v { font-size: 18px; font-weight: 700; margin-top: 3px; }
+  .stat .v.danger { color: var(--danger); }
+  .stat .v.good   { color: var(--good); }
+
+  .sim-panel {
+    display: flex;
+    flex-direction: column;
+  }
+  .sim-panel .table-wrap {
+    flex: 1;
+    min-height: 0;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  thead th {
+    position: sticky;
+    top: 0;
+    background: #f0f3f8;
+    padding: 9px 10px;
+    text-align: right;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th:first-child { text-align: center; }
+  tbody td {
+    padding: 6px 10px;
+    text-align: right;
+    border-bottom: 1px solid #eef1f5;
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) { background: #fafbfd; }
+  tbody td.age  { text-align: center; font-weight: 600; }
+  tbody td.calc { color: var(--muted); }
+  tbody td.depleted { color: var(--danger); font-weight: 600; }
+  tbody td.has-pension { background: var(--pension-soft) !important; }
+  .cell-input {
+    width: 136px;
+    border: 1px solid transparent;
+    background: transparent;
+    text-align: right;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .cell-input:hover  { border-color: var(--border); background: #fff; }
+  .cell-input:focus  { outline: none; border-color: var(--accent); background: #fff; }
+  .cell-input.edited { color: var(--accent); font-weight: 700; background: var(--accent-soft); }
+  .pension-badge {
+    display: inline-block;
+    font-size: 10px;
+    background: var(--pension);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>은퇴자금 계획 대시보드 <span style="font-size:14px;opacity:0.8;">v2</span></h1>
+  <p>연금 수령 시 연인출금에서 차감 · 월인출금은 연금 차감 전 금액으로 표시 · 연인출금을 직접 수정하며 자금 소진 시점을 확인하세요.</p>
+</header>
+
+<div class="layout">
+  <!-- 좌측 -->
+  <div class="left-col">
+
+    <!-- 입력 데이터 -->
+    <section class="panel">
+      <h2>입력 데이터</h2>
+
+      <div class="field">
+        <label>은퇴나이 (세)</label>
+        <input type="number" id="retireAge" value="55" min="0" max="100" step="1">
+      </div>
+
+      <div class="field">
+        <label>은퇴자금 (원)</label>
+        <input type="text" id="initialFund" value="500,000,000" inputmode="numeric">
+        <div class="korean-display" id="initialFund-korean">5억원</div>
+        <div class="hint">은퇴 시점에 보유한 총 자금</div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>물가상승율 (%)</label>
+          <input type="number" id="inflation" value="4.0" step="0.1">
+          <div class="toggle-row">
+            <input type="checkbox" id="inflationOn" checked>
+            <label for="inflationOn">매년 인출금 증가 적용</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>투자수익률 (%)</label>
+          <input type="number" id="returnRate" value="8.0" step="0.1">
+          <div class="hint">연말원금 = 연초 ×(1+수익률) − 연인출금</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>예상인출금 (원 / 월)</label>
+        <input type="text" id="monthlyWithdraw" value="3,000,000" inputmode="numeric">
+        <div class="korean-display" id="monthlyWithdraw-korean">300만원</div>
+        <div class="hint">매월 필요한 총 생활비 · 첫 해 연인출금 = ×12</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="recalcBtn">다시 계산</button>
+        <button class="btn secondary" id="resetBtn">수동 수정값 초기화</button>
+      </div>
+    </section>
+
+    <!-- 부가 데이터 -->
+    <section class="panel">
+      <h2 class="pension-title">부가 데이터 — 연금</h2>
+
+      <!-- 국민연금 -->
+      <div class="pension-group">
+        <div class="pension-group-title">국민연금</div>
+        <div class="pension-inline">
+          <div class="field">
+            <label>예상수령금액 (원 / 월)</label>
+            <input type="text" id="nationalPensionAmount" value="0" inputmode="numeric">
+            <div class="korean-display pension" id="nationalPensionAmount-korean"></div>
+          </div>
+          <div class="field">
+            <label>수령나이 (세)</label>
+            <input type="number" id="nationalPensionAge" value="65" min="0" max="100" step="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- 개인연금 -->
+      <div class="pension-group">
+        <div class="pension-group-title">개인연금</div>
+        <div class="pension-inline">
+          <div class="field">
+            <label>예상수령금액 (원 / 월)</label>
+            <input type="text" id="privatePensionAmount" value="0" inputmode="numeric">
+            <div class="korean-display pension" id="privatePensionAmount-korean"></div>
+          </div>
+          <div class="field">
+            <label>수령나이 (세)</label>
+            <input type="number" id="privatePensionAge" value="55" min="0" max="100" step="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="hint" style="margin-top:10px;">수령나이 도달 시 월 수령금액×12가 연인출금에서 차감됩니다. 월인출금은 차감 전 생활비 기준으로 표시됩니다.</div>
+    </section>
+
+  </div><!-- /left-col -->
+
+  <!-- 우측: 시뮬레이션 -->
+  <section class="panel sim-panel">
+    <h2>은퇴자금 시뮬레이션</h2>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>은퇴나이(세)</th>
+            <th>연초원금(원)</th>
+            <th>연인출금(원)</th>
+            <th>연말원금(원)</th>
+            <th>월인출금(원)</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+let overrides = {};
+
+const $ = (id) => document.getElementById(id);
+
+function stripComma(s) {
+  return String(s).replace(/[^0-9.]/g, "");
+}
+
+function toKorean(n) {
+  if (!n || n <= 0) return "";
+  const jo   = Math.floor(n / 1e12);
+  const eok  = Math.floor((n % 1e12) / 1e8);
+  const man  = Math.floor((n % 1e8)  / 1e4);
+  const rest = Math.floor(n % 1e4);
+  const parts = [];
+  if (jo)   parts.push(jo.toLocaleString("ko-KR")  + "조");
+  if (eok)  parts.push(eok.toLocaleString("ko-KR") + "억");
+  if (man)  parts.push(man.toLocaleString("ko-KR") + "만");
+  if (rest) parts.push(rest.toLocaleString("ko-KR"));
+  return parts.join(" ") + "원";
+}
+
+function setupMoneyInput(id) {
+  const inp  = $(id);
+  const hint = $(id + "-korean");
+  const update = () => {
+    const digits = stripComma(inp.value);
+    const num    = parseInt(digits, 10) || 0;
+    const before = inp.value.length;
+    const cursor = inp.selectionStart;
+    const formatted = num > 0 ? num.toLocaleString("ko-KR") : "";
+    inp.value = formatted;
+    const diff   = formatted.length - before;
+    const newPos = Math.max(0, cursor + diff);
+    try { inp.setSelectionRange(newPos, newPos); } catch(_) {}
+    if (hint) hint.textContent = num > 0 ? toKorean(num) : "";
+    render();
+  };
+  inp.addEventListener("input", update);
+}
+
+function readInputs() {
+  return {
+    retireAge:             parseInt($("retireAge").value, 10)               || 0,
+    initialFund:           parseFloat(stripComma($("initialFund").value))   || 0,
+    inflation:             (parseFloat($("inflation").value) || 0)          / 100,
+    inflationOn:           $("inflationOn").checked,
+    returnRate:            (parseFloat($("returnRate").value) || 0)         / 100,
+    monthlyWithdraw:       parseFloat(stripComma($("monthlyWithdraw").value)) || 0,
+    nationalPensionAmount: parseFloat(stripComma($("nationalPensionAmount").value)) || 0,
+    nationalPensionAge:    parseInt($("nationalPensionAge").value, 10)      || 999,
+    privatePensionAmount:  parseFloat(stripComma($("privatePensionAmount").value))  || 0,
+    privatePensionAge:     parseInt($("privatePensionAge").value, 10)       || 999,
+  };
+}
+
+function fmt(n) {
+  return Math.round(n).toLocaleString("ko-KR");
+}
+
+function pensionIncome(p, age) {
+  let income = 0;
+  if (p.nationalPensionAmount > 0 && age >= p.nationalPensionAge)
+    income += p.nationalPensionAmount * 12;
+  if (p.privatePensionAmount > 0 && age >= p.privatePensionAge)
+    income += p.privatePensionAmount * 12;
+  return income;
+}
+
+function simulate() {
+  const p = readInputs();
+  const rows = [];
+  let prevEnd   = null;
+  let prevGross = null;
+
+  for (let age = p.retireAge; age <= 100; age++) {
+    const ov     = overrides[age] || {};
+    const pension = pensionIncome(p, age);
+
+    // 연초원금: 이전 연말원금 그대로 (연금 미포함)
+    let start;
+    if (ov.start != null) {
+      start = ov.start;
+    } else {
+      start = prevEnd == null ? p.initialFund : prevEnd;
+    }
+
+    // 총생활비(gross): 물가상승 반영 연간 지출 목표 (월인출금 기준)
+    // 사용자가 연인출금(net)을 수동 수정한 경우 → gross를 역산
+    let gross;
+    if (ov.withdrawal != null) {
+      gross = ov.withdrawal + pension;
+    } else if (prevGross == null) {
+      gross = p.monthlyWithdraw * 12;
+    } else {
+      gross = p.inflationOn ? prevGross * (1 + p.inflation) : prevGross;
+    }
+
+    // 연인출금(net): 연금 차감 후 실제 자금에서 인출되는 금액
+    const net = Math.max(0, gross - pension);
+
+    // 연말원금: 수익 먼저, 순인출 나중
+    const end = start * (1 + p.returnRate) - net;
+
+    // 월인출금: 연금 차감 전 총생활비 기준 (변동 없음)
+    const month = gross / 12;
+
+    rows.push({
+      age, start, gross, net, end, month, pension,
+      startEdited:      ov.start != null,
+      withdrawalEdited: ov.withdrawal != null,
+    });
+
+    prevEnd   = end;
+    prevGross = gross;
+
+    if (end <= 0) break;
+  }
+  return rows;
+}
+
+function render() {
+  const rows = simulate();
+  renderTable(rows);
+  renderSummary(rows);
+}
+
+function renderTable(rows) {
+  const tbody = $("tbody");
+  tbody.innerHTML = "";
+  for (const r of rows) {
+    const tr      = document.createElement("tr");
+    const depleted = r.end <= 0;
+    const hasPen   = r.pension > 0;
+
+    // 연인출금 셀: 연금 차감 배지
+    const pensionBadge = hasPen
+      ? `<span class="pension-badge">연금-${fmt(r.pension)}</span>`
+      : "";
+
+    tr.innerHTML = `
+      <td class="age">${r.age}</td>
+      <td>
+        <input class="cell-input ${r.startEdited ? "edited" : ""}"
+               data-age="${r.age}" data-field="start"
+               value="${fmt(r.start)}">
+      </td>
+      <td class="${hasPen ? "has-pension" : ""}">
+        <input class="cell-input ${r.withdrawalEdited ? "edited" : ""}"
+               data-age="${r.age}" data-field="withdrawal"
+               value="${fmt(r.net)}">${pensionBadge}
+      </td>
+      <td class="calc ${depleted ? "depleted" : ""}">${fmt(r.end)}</td>
+      <td class="calc">${fmt(r.month)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  tbody.querySelectorAll(".cell-input").forEach((inp) => {
+    inp.addEventListener("change", onCellEdit);
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") inp.blur(); });
+  });
+}
+
+function onCellEdit(e) {
+  const inp   = e.target;
+  const age   = parseInt(inp.dataset.age, 10);
+  const field = inp.dataset.field;
+  const raw   = inp.value.replace(/[^0-9.\-]/g, "");
+  const val   = parseFloat(raw);
+
+  if (!overrides[age]) overrides[age] = {};
+  if (raw === "" || isNaN(val)) {
+    delete overrides[age][field];
+    if (Object.keys(overrides[age]).length === 0) delete overrides[age];
+  } else {
+    overrides[age][field] = val;
+  }
+  render();
+}
+
+function renderSummary(rows) {
+  const last           = rows[rows.length - 1];
+  const depleted       = last && last.end <= 0;
+  const totalWithdrawn = rows.reduce((s, r) => s + r.net, 0);
+
+  const depleteText  = depleted ? last.age + "세" : "100세까지 유지";
+  const depleteClass = depleted ? "danger" : "good";
+
+  $("summary").innerHTML = `
+    <div class="stat">
+      <div class="k">자금 소진 시점</div>
+      <div class="v ${depleteClass}">${depleteText}</div>
+    </div>
+    <div class="stat">
+      <div class="k">지속 기간</div>
+      <div class="v">${rows.length}년</div>
+    </div>
+    <div class="stat">
+      <div class="k">누적 인출금 (자금 기준)</div>
+      <div class="v">${fmt(totalWithdrawn)} 원</div>
+    </div>
+    <div class="stat">
+      <div class="k">최종 잔액 (${last ? last.age : "-"}세)</div>
+      <div class="v ${depleted ? "danger" : ""}">${last ? fmt(Math.max(0, last.end)) : "-"} 원</div>
+    </div>
+  `;
+}
+
+// 이벤트 등록
+["retireAge","inflation","returnRate",
+ "nationalPensionAge","privatePensionAge"].forEach(id => {
+  $(id).addEventListener("input", render);
+});
+["initialFund","monthlyWithdraw",
+ "nationalPensionAmount","privatePensionAmount"].forEach(id => {
+  setupMoneyInput(id);
+});
+$("inflationOn").addEventListener("change", render);
+$("recalcBtn").addEventListener("click", render);
+$("resetBtn").addEventListener("click", () => { overrides = {}; render(); });
+
+render();
+</script>
+</body>
+</html>
