@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>은퇴자금 계획 대시보드</title>
+<title>은퇴자금 계획 대시보드 v2</title>
 <style>
   :root {
     --bg: #f4f6fa;
@@ -89,7 +89,6 @@
   }
   .korean-display.pension { color: var(--pension); }
 
-  /* 물가상승율 + 투자수익률 나란히 */
   .field-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -107,7 +106,6 @@
   .toggle-row input { width: 15px; height: 15px; flex-shrink: 0; }
   .toggle-row label { margin: 0; font-size: 12px; color: var(--text); }
 
-  /* 연금 그룹 */
   .pension-group {
     background: var(--pension-soft);
     border: 1px solid #c4b5fd;
@@ -224,8 +222,8 @@
 </head>
 <body>
 <header>
-  <h1>은퇴자금 계획 대시보드</h1>
-  <p>입력값을 조정하고, 시뮬레이션 표의 연초원금·연인출금을 직접 수정하며 자금 소진 시점을 확인하세요.</p>
+  <h1>은퇴자금 계획 대시보드 <span style="font-size:14px;opacity:0.8;">v2</span></h1>
+  <p>연금 수령 시 연인출금에서 차감 · 월인출금은 연금 차감 전 금액으로 표시 · 연인출금을 직접 수정하며 자금 소진 시점을 확인하세요.</p>
 </header>
 
 <div class="layout">
@@ -248,7 +246,6 @@
         <div class="hint">은퇴 시점에 보유한 총 자금</div>
       </div>
 
-      <!-- 물가상승율 + 투자수익률 나란히 -->
       <div class="field-row">
         <div class="field">
           <label>물가상승율 (%)</label>
@@ -269,7 +266,7 @@
         <label>예상인출금 (원 / 월)</label>
         <input type="text" id="monthlyWithdraw" value="3,000,000" inputmode="numeric">
         <div class="korean-display" id="monthlyWithdraw-korean">300만원</div>
-        <div class="hint">매월 필요한 인출금 · 첫 해 연인출금 = ×12</div>
+        <div class="hint">매월 필요한 총 생활비 · 첫 해 연인출금 = ×12</div>
       </div>
 
       <div class="btn-row">
@@ -314,7 +311,7 @@
         </div>
       </div>
 
-      <div class="hint" style="margin-top:10px;">수령나이 도달 시 월 수령금액×12가 매년 연초원금에 추가됩니다.</div>
+      <div class="hint" style="margin-top:10px;">수령나이 도달 시 월 수령금액×12가 연인출금에서 차감됩니다. 월인출금은 차감 전 생활비 기준으로 표시됩니다.</div>
     </section>
 
   </div><!-- /left-col -->
@@ -417,45 +414,49 @@ function pensionIncome(p, age) {
 function simulate() {
   const p = readInputs();
   const rows = [];
-  let prevEnd        = null;
-  let prevWithdrawal = null;
+  let prevEnd   = null;
+  let prevGross = null;
 
   for (let age = p.retireAge; age <= 100; age++) {
     const ov     = overrides[age] || {};
     const pension = pensionIncome(p, age);
 
-    // 연초원금: 이전 연말원금 + 연금수입 (사용자 수동 수정 우선)
+    // 연초원금: 이전 연말원금 그대로 (연금 미포함)
     let start;
     if (ov.start != null) {
       start = ov.start;
-    } else if (prevEnd == null) {
-      start = p.initialFund + pension;
     } else {
-      start = prevEnd + pension;
+      start = prevEnd == null ? p.initialFund : prevEnd;
     }
 
-    // 연인출금
-    let withdrawal;
+    // 총생활비(gross): 물가상승 반영 연간 지출 목표 (월인출금 기준)
+    // 사용자가 연인출금(net)을 수동 수정한 경우 → gross를 역산
+    let gross;
     if (ov.withdrawal != null) {
-      withdrawal = ov.withdrawal;
-    } else if (prevWithdrawal == null) {
-      withdrawal = p.monthlyWithdraw * 12;
+      gross = ov.withdrawal + pension;
+    } else if (prevGross == null) {
+      gross = p.monthlyWithdraw * 12;
     } else {
-      withdrawal = p.inflationOn ? prevWithdrawal * (1 + p.inflation) : prevWithdrawal;
+      gross = p.inflationOn ? prevGross * (1 + p.inflation) : prevGross;
     }
 
-    // 연말원금: 수익 먼저, 인출 나중
-    const end   = start * (1 + p.returnRate) - withdrawal;
-    const month = withdrawal / 12;
+    // 연인출금(net): 연금 차감 후 실제 자금에서 인출되는 금액
+    const net = Math.max(0, gross - pension);
+
+    // 연말원금: 수익 먼저, 순인출 나중
+    const end = start * (1 + p.returnRate) - net;
+
+    // 월인출금: 연금 차감 전 총생활비 기준 (변동 없음)
+    const month = gross / 12;
 
     rows.push({
-      age, start, withdrawal, end, month, pension,
+      age, start, gross, net, end, month, pension,
       startEdited:      ov.start != null,
       withdrawalEdited: ov.withdrawal != null,
     });
 
-    prevEnd        = end;
-    prevWithdrawal = withdrawal;
+    prevEnd   = end;
+    prevGross = gross;
 
     if (end <= 0) break;
   }
@@ -472,25 +473,27 @@ function renderTable(rows) {
   const tbody = $("tbody");
   tbody.innerHTML = "";
   for (const r of rows) {
-    const tr       = document.createElement("tr");
+    const tr      = document.createElement("tr");
     const depleted = r.end <= 0;
     const hasPen   = r.pension > 0;
 
-    // 연초원금 셀: 연금 수입이 있을 때 배지 표시
-    const startBadge = hasPen
-      ? `<span class="pension-badge">연금+${fmt(r.pension)}</span>`
+    // 연인출금 셀: 연금 차감 배지
+    const pensionBadge = hasPen
+      ? `<span class="pension-badge">연금-${fmt(r.pension)}</span>`
       : "";
 
     tr.innerHTML = `
       <td class="age">${r.age}</td>
-      <td class="${hasPen ? "has-pension" : ""}">
+      <td>
         <input class="cell-input ${r.startEdited ? "edited" : ""}"
                data-age="${r.age}" data-field="start"
-               value="${fmt(r.start)}">${startBadge}
+               value="${fmt(r.start)}">
       </td>
-      <td><input class="cell-input ${r.withdrawalEdited ? "edited" : ""}"
-                 data-age="${r.age}" data-field="withdrawal"
-                 value="${fmt(r.withdrawal)}"></td>
+      <td class="${hasPen ? "has-pension" : ""}">
+        <input class="cell-input ${r.withdrawalEdited ? "edited" : ""}"
+               data-age="${r.age}" data-field="withdrawal"
+               value="${fmt(r.net)}">${pensionBadge}
+      </td>
       <td class="calc ${depleted ? "depleted" : ""}">${fmt(r.end)}</td>
       <td class="calc">${fmt(r.month)}</td>
     `;
@@ -521,9 +524,9 @@ function onCellEdit(e) {
 }
 
 function renderSummary(rows) {
-  const last          = rows[rows.length - 1];
-  const depleted      = last && last.end <= 0;
-  const totalWithdrawn = rows.reduce((s, r) => s + r.withdrawal, 0);
+  const last           = rows[rows.length - 1];
+  const depleted       = last && last.end <= 0;
+  const totalWithdrawn = rows.reduce((s, r) => s + r.net, 0);
 
   const depleteText  = depleted ? last.age + "세" : "100세까지 유지";
   const depleteClass = depleted ? "danger" : "good";
@@ -538,7 +541,7 @@ function renderSummary(rows) {
       <div class="v">${rows.length}년</div>
     </div>
     <div class="stat">
-      <div class="k">누적 인출금</div>
+      <div class="k">누적 인출금 (자금 기준)</div>
       <div class="v">${fmt(totalWithdrawn)} 원</div>
     </div>
     <div class="stat">
