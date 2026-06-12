@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>은퇴자금 계획 대시보드 v2</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
   :root {
     --bg: #f4f6fa;
@@ -31,9 +32,24 @@
     background: linear-gradient(135deg, #2563eb, #1e40af);
     color: #fff;
     padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   header h1 { margin: 0; font-size: 20px; }
   header p  { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+  #captureBtn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #captureBtn:hover { background: rgba(255,255,255,0.28); }
 
   .layout {
     display: grid;
@@ -268,6 +284,7 @@
 <body>
 <header>
   <h1>은퇴자금 계획 대시보드 <span style="font-size:14px;opacity:0.8;">v2</span></h1>
+  <button id="captureBtn">📷 화면 저장</button>
 </header>
 
 <div class="layout">
@@ -763,6 +780,22 @@ $("recalcBtn").addEventListener("click", render);
 $("resetBtn").addEventListener("click", () => { overrides = {}; render(); });
 
 render();
+
+$("captureBtn").addEventListener("click", () => {
+  const btn = $("captureBtn");
+  btn.style.visibility = "hidden";
+  html2canvas(document.body, { scale: 2, useCORS: true }).then(canvas => {
+    btn.style.visibility = "";
+    const today = new Date();
+    const stamp = today.getFullYear()
+      + String(today.getMonth() + 1).padStart(2, "0")
+      + String(today.getDate()).padStart(2, "0");
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = "retirement_plan_" + stamp + ".png";
+    a.click();
+  }).catch(() => { btn.style.visibility = ""; });
+});
 </script>
 </body>
 </html>
