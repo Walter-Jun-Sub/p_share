@@ -89,6 +89,23 @@
   }
   .korean-display.pension { color: var(--pension); }
 
+  .notes-panel {
+    background: #f8f9fb;
+    border: 1px dashed var(--border);
+  }
+  .notes-list {
+    margin: 0;
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .notes-list li {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
   .label-row {
     display: flex;
     align-items: baseline;
@@ -279,7 +296,6 @@
         <div class="field">
           <label>투자수익률 (%)</label>
           <input type="number" id="returnRate" value="8.0" step="0.1">
-          <div class="hint">연말원금 = 연초잔액 ×(1+수익률) − 인출금(원/년)</div>
         </div>
       </div>
 
@@ -334,7 +350,15 @@
         </div>
       </div>
 
-      <div class="hint" style="margin-top:10px;">수령나이 도달 시 월 수령금액×12가 인출금(원/년)에서 차감됩니다. 인출금(원/월)은 차감 전 생활비 기준으로 표시됩니다.</div>
+    </section>
+
+    <!-- 계산 기준 안내 -->
+    <section class="panel notes-panel">
+      <ul class="notes-list">
+        <li>연말원금(원) = 은퇴자금(원) × (1+투자수익률) − 인출금(원/년)</li>
+        <li>국민연금/개인연금은 수령나이 도달 시 인출금(원/년)에서 고정 차감된다고 가정하고 연말원금(원)이 계산됩니다</li>
+        <li>은퇴자금(원) 및 인출금(원/년) 값은 수동으로 수정 가능합니다 (투자 및 생활비 변화를 고려한 임의수정)</li>
+      </ul>
     </section>
 
   </div><!-- /left-col -->
