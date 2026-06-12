@@ -223,7 +223,7 @@
 <body>
 <header>
   <h1>은퇴자금 계획 대시보드 <span style="font-size:14px;opacity:0.8;">v2</span></h1>
-  <p>연금 수령 시 연인출금에서 차감 · 월인출금은 연금 차감 전 금액으로 표시 · 연인출금을 직접 수정하며 자금 소진 시점을 확인하세요.</p>
+  <p>연금 수령 시 인출금(원/년)에서 차감 · 인출금(원/월)은 연금 차감 전 금액으로 표시 · 인출금(원/년)을 직접 수정하며 자금 소진 시점을 확인하세요.</p>
 </header>
 
 <div class="layout">
@@ -266,7 +266,7 @@
         <label>예상인출금 (원 / 월)</label>
         <input type="text" id="monthlyWithdraw" value="3,000,000" inputmode="numeric">
         <div class="korean-display" id="monthlyWithdraw-korean">300만원</div>
-        <div class="hint">매월 필요한 총 생활비 · 첫 해 연인출금 = ×12</div>
+        <div class="hint">매월 필요한 총 생활비 · 첫 해 인출금(원/년) = ×12</div>
       </div>
 
       <div class="btn-row">
@@ -311,7 +311,7 @@
         </div>
       </div>
 
-      <div class="hint" style="margin-top:10px;">수령나이 도달 시 월 수령금액×12가 연인출금에서 차감됩니다. 월인출금은 차감 전 생활비 기준으로 표시됩니다.</div>
+      <div class="hint" style="margin-top:10px;">수령나이 도달 시 월 수령금액×12가 인출금(원/년)에서 차감됩니다. 인출금(원/월)은 차감 전 생활비 기준으로 표시됩니다.</div>
     </section>
 
   </div><!-- /left-col -->
@@ -327,10 +327,10 @@
         <thead>
           <tr>
             <th>은퇴나이(세)</th>
-            <th>연초원금(원)</th>
-            <th>연인출금(원)</th>
+            <th>은퇴자금(원)</th>
+            <th>인출금(원/년)</th>
             <th>연말원금(원)</th>
-            <th>월인출금(원)</th>
+            <th>인출금(원/월)</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
