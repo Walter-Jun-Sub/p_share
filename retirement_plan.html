@@ -89,13 +89,14 @@
   }
   .korean-display.pension { color: var(--pension); }
 
-  .input-row {
+  .label-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 5px;
   }
-  .input-row input { flex: 1; min-width: 0; }
-  .input-row .korean-display {
+  .label-row label { margin-bottom: 0; }
+  .label-row .korean-display {
     margin-top: 0;
     min-height: unset;
     white-space: nowrap;
@@ -253,11 +254,11 @@
       </div>
 
       <div class="field">
-        <label>은퇴자금 (원)</label>
-        <div class="input-row">
-          <input type="text" id="initialFund" value="500,000,000" inputmode="numeric">
+        <div class="label-row">
+          <label>은퇴자금 (원)</label>
           <div class="korean-display" id="initialFund-korean">5억원</div>
         </div>
+        <input type="text" id="initialFund" value="500,000,000" inputmode="numeric">
         <div class="hint">은퇴 시점에 보유한 총 자금</div>
       </div>
 
@@ -278,11 +279,11 @@
       </div>
 
       <div class="field">
-        <label>예상인출금 (원 / 월)</label>
-        <div class="input-row">
-          <input type="text" id="monthlyWithdraw" value="3,000,000" inputmode="numeric">
+        <div class="label-row">
+          <label>예상인출금 (원 / 월)</label>
           <div class="korean-display" id="monthlyWithdraw-korean">300만원</div>
         </div>
+        <input type="text" id="monthlyWithdraw" value="3,000,000" inputmode="numeric">
         <div class="hint">매월 필요한 총 생활비 · 첫 해 인출금(원/년) = ×12</div>
       </div>
 
