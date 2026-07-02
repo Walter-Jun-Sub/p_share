@@ -819,13 +819,75 @@
             min-width: 100px;
         }
 
+        .mobile-tx-badge {
+            display: none;
+        }
+
         /* Responsiveness */
         @media (max-width: 768px) {
-            .play-table {
-                width: 340px;
-                height: 340px;
+            .mobile-tx-badge {
+                display: inline-block;
+                padding: 4px 10px;
+                border-radius: 8px;
+                background: rgba(255, 215, 0, 0.15);
+                border: 1px solid rgba(255, 215, 0, 0.3);
+                color: var(--accent-gold);
+                font-size: 0.75rem;
+                font-weight: 700;
+                margin-top: 4px;
             }
-            
+
+            .play-table-container {
+                margin: 20px 0;
+                width: 100%;
+            }
+
+            .play-table {
+                width: 100% !important;
+                height: auto !important;
+                border: none !important;
+                border-radius: 0 !important;
+                display: block !important;
+            }
+
+            .players-ring.mobile-grid {
+                position: static !important;
+                width: 100% !important;
+                height: auto !important;
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+                padding: 10px !important;
+                justify-content: center !important;
+            }
+
+            .players-ring.mobile-grid .player-card {
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                transform: none !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+            }
+
+            /* N=3 players dynamic grid alignment on mobile */
+            .players-ring.mobile-grid.players-3 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .players-ring.mobile-grid.players-3 .player-card:nth-child(1) {
+                grid-column: span 2 !important;
+                max-width: 220px !important;
+            }
+
+            /* N=5 players dynamic grid alignment on mobile */
+            .players-ring.mobile-grid.players-5 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .players-ring.mobile-grid.players-5 .player-card:nth-child(1) {
+                grid-column: span 2 !important;
+                max-width: 220px !important;
+            }
+
             .player-card {
                 width: 150px;
                 padding: 8px;
@@ -944,6 +1006,7 @@
                 </button>
                 <div class="dash-title">
                     <h2>Go-Stop Money Flow</h2>
+                    <div id="mobile-tx-badge" class="mobile-tx-badge">총 정산: <span id="mobile-tx-count">0회</span></div>
                 </div>
                 <button type="button" id="btn-prev-screen" class="btn btn-secondary btn-md">
                     <span>⬅️ 이전화면</span>
@@ -1166,6 +1229,8 @@
             state.players = [];
             state.transactionsCount = 0;
             totalTransactionsEl.textContent = '0회';
+            const mCount = document.getElementById('mobile-tx-count');
+            if (mCount) mCount.textContent = '0회';
             
             inputRows.forEach((row, idx) => {
                 const avatar = row.querySelector('.player-avatar').textContent;
@@ -1316,36 +1381,46 @@
             const n = cards.length;
             if (n === 0) return;
             
-            const ringContainer = document.querySelector('.play-table');
-            const ringWidth = ringContainer.clientWidth;
-            const ringHeight = ringContainer.clientHeight;
+            const isMobile = window.innerWidth <= 768;
             
-            const centerX = ringWidth / 2;
-            const centerY = ringHeight / 2;
-            
-            // Adjust radius to push players outwards (0.43 of width)
-            // This prevents overlaps with the central hub, especially for 3 and 5 players.
-            let radius = ringWidth * 0.43;
-            if (window.innerWidth <= 768) {
-                radius = ringWidth * 0.41;
+            if (isMobile) {
+                // Enable grid mode on mobile to prevent any card overlaps
+                playersRing.className = `players-ring mobile-grid players-${n}`;
+                
+                cards.forEach(card => {
+                    card.style.left = '';
+                    card.style.top = '';
+                });
+                
+                // Hide central hub on mobile and rely on header stats badge
+                document.querySelector('.center-hub').style.display = 'none';
+            } else {
+                // Restore original polygon ring layout on desktop
+                playersRing.className = 'players-ring';
+                document.querySelector('.center-hub').style.display = 'flex';
+                
+                const ringContainer = document.querySelector('.play-table');
+                const ringWidth = ringContainer.clientWidth;
+                const ringHeight = ringContainer.clientHeight;
+                
+                const centerX = ringWidth / 2;
+                const centerY = ringHeight / 2;
+                
+                let radius = ringWidth * 0.43;
+                
+                cards.forEach((card, idx) => {
+                    const angle = (idx * 2 * Math.PI) / n - Math.PI / 2;
+                    
+                    const cardWidth = card.clientWidth || 220;
+                    const cardHeight = card.clientHeight || 150;
+                    
+                    const x = centerX + radius * Math.cos(angle) - cardWidth / 2;
+                    const y = centerY + radius * Math.sin(angle) - cardHeight / 2;
+                    
+                    card.style.left = `${x}px`;
+                    card.style.top = `${y}px`;
+                });
             }
-            
-            cards.forEach((card, idx) => {
-                // Divide circle into n points
-                // Offset by -Math.PI / 2 to start at 12 o'clock (top)
-                const angle = (idx * 2 * Math.PI) / n - Math.PI / 2;
-                
-                const cardWidth = card.clientWidth || 220;
-                const cardHeight = card.clientHeight || 150;
-                
-                // Calculate coordinates
-                const x = centerX + radius * Math.cos(angle) - cardWidth / 2;
-                const y = centerY + radius * Math.sin(angle) - cardHeight / 2;
-                
-                // Apply styling
-                card.style.left = `${x}px`;
-                card.style.top = `${y}px`;
-            });
         }
 
         // --- MODAL & CALCULATOR LOGIC ---
@@ -1517,6 +1592,8 @@
             
             state.transactionsCount++;
             totalTransactionsEl.textContent = `${state.transactionsCount}회`;
+            const mCount = document.getElementById('mobile-tx-count');
+            if (mCount) mCount.textContent = `${state.transactionsCount}회`;
             
             // Re-render
             renderDashboard();
