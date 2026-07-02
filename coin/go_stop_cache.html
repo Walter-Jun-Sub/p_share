@@ -889,8 +889,9 @@
             }
 
             .player-card {
-                width: 150px;
-                padding: 8px;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 10px 8px;
                 border-radius: 14px;
             }
             
@@ -908,16 +909,35 @@
             }
             
             .player-card-name {
-                font-size: 0.8rem;
+                font-size: 0.85rem;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
             }
             
             .player-card-balance {
-                font-size: 0.85rem;
+                font-size: 0.9rem;
+                white-space: nowrap !important;
             }
             
             .player-card-transactions {
-                font-size: 0.7rem;
-                max-height: 70px;
+                font-size: 0.72rem;
+                max-height: 85px;
+            }
+
+            .tx-item {
+                white-space: nowrap !important;
+            }
+
+            .tx-target {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                max-width: 65px !important;
+            }
+
+            .tx-amount {
+                white-space: nowrap !important;
             }
             
             .center-hub {
