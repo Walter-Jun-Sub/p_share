@@ -992,22 +992,52 @@
                 font-size: 0.85rem;
             }
 
+            /* 모달: 내용이 길면 오버레이 자체를 스크롤 */
+            .modal-overlay {
+                align-items: flex-start;
+                overflow-y: auto;
+                padding: 20px 0;
+            }
+
+            .modal-header h3 {
+                font-size: 1.1rem;
+            }
+
+            .transactions-list {
+                max-height: 210px;
+            }
+
+            .modal-footer .btn {
+                min-width: 80px;
+                padding: 10px 16px;
+            }
+
+            /* tx-row: flex 세로 배치 + 요소 순서 재배치 (보내는사람→↓→받는사람→금액) */
             .tx-row {
-                grid-template-columns: 1fr;
-                gap: 6px;
+                display: flex !important;
+                flex-direction: column;
+                gap: 8px;
                 padding: 10px;
             }
 
+            .tx-sender-select { order: 1; }
+
             .tx-arrow {
+                order: 2;
                 transform: rotate(90deg);
-                margin: 2px 0;
+                margin: 2px auto;
             }
+
+            .tx-receiver-select { order: 3; }
+
+            .tx-amount-input { order: 4; }
 
             .tx-give-text, .tx-currency-label {
                 display: none;
             }
 
             .btn-remove-row {
+                order: 5;
                 align-self: flex-end;
             }
         }
