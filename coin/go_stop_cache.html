@@ -825,6 +825,18 @@
 
         /* Responsiveness */
         @media (max-width: 768px) {
+            .glass-card {
+                padding: 24px 16px;
+            }
+
+            .logo-icon {
+                font-size: 2.2rem;
+            }
+
+            .logo-area h1 {
+                font-size: 1.6rem;
+            }
+
             .mobile-tx-badge {
                 display: inline-block;
                 padding: 4px 10px;
@@ -835,6 +847,28 @@
                 font-size: 0.75rem;
                 font-weight: 700;
                 margin-top: 4px;
+            }
+
+            /* 대시보드 헤더: 타이틀 위로, 버튼들 아래에 나란히 */
+            .dash-header {
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+
+            .dash-title {
+                order: -1;
+                width: 100%;
+                text-align: center;
+            }
+
+            .dash-title h2 {
+                font-size: 1.2rem;
+            }
+
+            .btn-md {
+                padding: 10px 14px;
+                font-size: 0.85rem;
             }
 
             .play-table-container {
@@ -894,32 +928,32 @@
                 padding: 10px 8px;
                 border-radius: 14px;
             }
-            
+
             .player-card-header {
                 gap: 6px;
                 padding-bottom: 6px;
                 margin-bottom: 6px;
             }
-            
+
             .player-card-avatar {
                 font-size: 1.3rem;
                 width: 32px;
                 height: 32px;
                 border-radius: 8px;
             }
-            
+
             .player-card-name {
                 font-size: 0.85rem;
                 white-space: nowrap !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
             }
-            
+
             .player-card-balance {
                 font-size: 0.9rem;
                 white-space: nowrap !important;
             }
-            
+
             .player-card-transactions {
                 font-size: 0.72rem;
                 max-height: 85px;
@@ -939,40 +973,40 @@
             .tx-amount {
                 white-space: nowrap !important;
             }
-            
+
             .center-hub {
                 width: 90px;
                 height: 90px;
             }
-            
+
             .hub-logo {
                 font-size: 1.3rem;
                 margin-bottom: 2px;
             }
-            
+
             .hub-label {
                 font-size: 0.55rem;
             }
-            
+
             .hub-value {
                 font-size: 0.85rem;
             }
-            
+
             .tx-row {
                 grid-template-columns: 1fr;
                 gap: 6px;
                 padding: 10px;
             }
-            
+
             .tx-arrow {
                 transform: rotate(90deg);
                 margin: 2px 0;
             }
-            
+
             .tx-give-text, .tx-currency-label {
                 display: none;
             }
-            
+
             .btn-remove-row {
                 align-self: flex-end;
             }
