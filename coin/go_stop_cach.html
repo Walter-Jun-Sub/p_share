@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고스톱 정산 대시보드 - GoStop Calc</title>
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- GO-STOP MONEY FLOW STYLESHEET --- */
+
+        :root {
+            --bg-dark: #0f1016;
+            --bg-card: rgba(26, 27, 38, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(230, 57, 70, 0.3);
+            
+            --primary-color: #e63946;
+            --primary-glow: rgba(230, 57, 70, 0.5);
+            --secondary-color: #457b9d;
+            --success-color: #2ecc71; /* 받을 금액 (초록) */
+            --danger-color: #ff4757;  /* 줄 금액 (빨강) */
+            --accent-gold: #ffd700;
+            
+            --text-main: #f1faee;
+            --text-muted: #a8dadc;
+            --text-dark: #1d3557;
+            
+            --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* Base Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Background Effects */
+        .app-container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 1;
+        }
+
+        .bg-glow {
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: -1;
+            animation: pulse 8s infinite alternate;
+        }
+
+        .red-glow {
+            background: var(--primary-color);
+            top: 10%;
+            left: 15%;
+        }
+
+        .blue-glow {
+            background: var(--secondary-color);
+            bottom: 10%;
+            right: 15%;
+            animation-delay: 4s;
+        }
+
+        .bg-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 0);
+            background-size: 24px 24px;
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.2) translate(30px, 30px); }
+        }
+
+        /* Glassmorphism Common Styles */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            transition: var(--transition-smooth);
+        }
+
+        /* Screen Transitions */
+        .screen {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .screen.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- 1. SETUP SCREEN STYLES --- */
+        .setup-card {
+            margin: 0 auto;
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .logo-icon {
+            font-size: 3rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        .logo-area h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #fff 30%, var(--primary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        /* Counter Input (+ / -) */
+        .counter-input {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 6px;
+            max-width: 220px;
+            margin: 0 auto 10px auto;
+        }
+
+        .btn-ctrl {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-main);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ctrl:hover {
+            background: var(--primary-color);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .counter-input input {
+            width: 80px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.6rem;
+            font-weight: 700;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+
+        .counter-input input::-webkit-outer-spin-button,
+        .counter-input input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .input-hint {
+            display: block;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            opacity: 0.8;
+        }
+
+        /* Player Dynamic Inputs */
+        .player-inputs-list {
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        /* Custom Scrollbar */
+        .player-inputs-list::-webkit-scrollbar,
+        .transactions-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .player-inputs-list::-webkit-scrollbar-thumb,
+        .transactions-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .player-input-row {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: var(--transition-smooth);
+        }
+
+        .player-input-row:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .player-avatar {
+            font-size: 1.8rem;
+            margin-right: 15px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .player-avatar:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: scale(1.05);
+        }
+
+        .player-input-row input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .player-input-row input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Button System */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #d90429 100%);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(230, 57, 70, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #d90429 0%, #8b0000 100%);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(217, 4, 41, 0.2);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(217, 4, 41, 0.4);
+        }
+
+        .btn-text {
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding: 8px 16px;
+        }
+
+        .btn-text:hover {
+            color: var(--text-main);
+            text-decoration: underline;
+        }
+
+        .btn-lg {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 1.1rem;
+        }
+
+        .btn-md {
+            padding: 12px 20px;
+            font-size: 0.95rem;
+        }
+
+        /* --- 2. DASHBOARD SCREEN STYLES --- */
+        #dashboard-screen {
+            max-width: 1100px;
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .dash-title {
+            text-align: center;
+        }
+
+        .dash-title h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 50%, var(--secondary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .game-status-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            color: var(--success-color);
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Play Table (Circular/Polygon Arena) */
+        .play-table-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px 0;
+        }
+
+        .play-table {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            border: 2px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Central Hub Card (Slightly smaller to prevent overlap) */
+        .center-hub {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(30, 31, 46, 0.9) 0%, rgba(15, 16, 22, 0.95) 100%);
+            border: 2px solid var(--border-color);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.05);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .hub-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hub-logo {
+            font-size: 1.8rem;
+            margin-bottom: 2px;
+        }
+
+        .hub-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hub-value {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            margin-top: 2px;
+        }
+
+        /* Player Ring Placement */
+        .players-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        /* Player Dashboard Card (Slightly narrower and optimized to prevent overlaps) */
+        .player-card {
+            position: absolute;
+            width: 220px;
+            background: rgba(26, 27, 38, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 12px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s;
+            z-index: 5;
+        }
+
+        .player-card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+            z-index: 8;
+        }
+
+        /* Connective active glow */
+        .player-card.is-winner {
+            border-color: var(--success-color);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.2);
+        }
+
+        .player-card.is-loser {
+            border-color: var(--danger-color);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.2);
+        }
+
+        .player-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+
+        .player-card-avatar {
+            font-size: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-card-info {
+            flex-grow: 1;
+            min-width: 0; /* allows text truncation */
+        }
+
+        .player-card-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Net balance badge */
+        .player-card-balance {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-top: 2px;
+        }
+
+        .balance-plus {
+            color: var(--success-color);
+        }
+
+        .balance-minus {
+            color: var(--danger-color);
+        }
+
+        .balance-zero {
+            color: var(--text-muted);
+        }
+
+        /* Transaction List inside player card */
+        .player-card-transactions {
+            font-size: 0.8rem;
+            max-height: 95px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+
+        .player-card-transactions::-webkit-scrollbar {
+            width: 4px;
+        }
+        .player-card-transactions::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .tx-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 6px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tx-give {
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .tx-receive {
+            border-left: 3px solid var(--success-color);
+        }
+
+        .tx-target {
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90px;
+        }
+
+        .tx-amount {
+            font-weight: 700;
+        }
+
+        .tx-give .tx-amount {
+            color: var(--danger-color);
+        }
+
+        .tx-receive .tx-amount {
+            color: var(--success-color);
+        }
+
+        .tx-empty {
+            color: rgba(255, 255, 255, 0.25);
+            font-style: italic;
+            text-align: center;
+            padding: 8px 0;
+        }
+
+        .dash-footer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* --- 3. MODAL POPUP STYLES --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 11, 16, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            width: 90%;
+            max-width: 650px;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 18px;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-close:hover {
+            color: var(--primary-color);
+        }
+
+        .modal-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        /* Transaction List (Modal) */
+        .transactions-list {
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 6px;
+            margin-bottom: 15px;
+        }
+
+        .tx-row {
+            display: grid;
+            grid-template-columns: 1.2fr auto 1.2fr auto 1fr auto;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 12px;
+            animation: slideIn 0.25s ease;
+        }
+
+        .tx-row select, .tx-row input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            outline: none;
+            transition: var(--transition-smooth);
+            width: 100%;
+        }
+
+        .tx-row select:focus, .tx-row input:focus {
+            border-color: var(--secondary-color);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .tx-row select {
+            cursor: pointer;
+        }
+
+        .tx-arrow {
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+            text-align: center;
+        }
+
+        .tx-give-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .tx-currency-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        .btn-remove-row {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .btn-remove-row:hover {
+            color: var(--primary-color);
+            background: rgba(255, 71, 87, 0.1);
+        }
+
+        .modal-actions-sub {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+
+        .modal-footer .btn {
+            min-width: 100px;
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .play-table {
+                width: 340px;
+                height: 340px;
+            }
+            
+            .player-card {
+                width: 150px;
+                padding: 8px;
+                border-radius: 14px;
+            }
+            
+            .player-card-header {
+                gap: 6px;
+                padding-bottom: 6px;
+                margin-bottom: 6px;
+            }
+            
+            .player-card-avatar {
+                font-size: 1.3rem;
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+            }
+            
+            .player-card-name {
+                font-size: 0.8rem;
+            }
+            
+            .player-card-balance {
+                font-size: 0.85rem;
+            }
+            
+            .player-card-transactions {
+                font-size: 0.7rem;
+                max-height: 70px;
+            }
+            
+            .center-hub {
+                width: 90px;
+                height: 90px;
+            }
+            
+            .hub-logo {
+                font-size: 1.3rem;
+                margin-bottom: 2px;
+            }
+            
+            .hub-label {
+                font-size: 0.55rem;
+            }
+            
+            .hub-value {
+                font-size: 0.85rem;
+            }
+            
+            .tx-row {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                padding: 10px;
+            }
+            
+            .tx-arrow {
+                transform: rotate(90deg);
+                margin: 2px 0;
+            }
+            
+            .tx-give-text, .tx-currency-label {
+                display: none;
+            }
+            
+            .btn-remove-row {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Background decorative elements for rich aesthetics -->
+        <div class="bg-glow red-glow"></div>
+        <div class="bg-glow blue-glow"></div>
+        <div class="bg-pattern"></div>
+
+        <!-- 1. 최초 시작 화면 (Setup Screen) -->
+        <section id="setup-screen" class="screen active">
+            <div class="glass-card setup-card">
+                <div class="logo-area">
+                    <span class="logo-icon">🎴</span>
+                    <h1>고스톱 정산 대시보드</h1>
+                    <p class="subtitle">게임 머니 분배를 쉽고 스마트하게 관리하세요</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="player-count">플레이 인원 설정</label>
+                    <div class="counter-input">
+                        <button type="button" id="btn-decrease" class="btn-ctrl">-</button>
+                        <input type="number" id="player-count" value="3" min="3" max="8" readonly>
+                        <button type="button" id="btn-increase" class="btn-ctrl">+</button>
+                    </div>
+                    <span class="input-hint">* 최소 3명 이상 설정 가능합니다.</span>
+                </div>
+
+                <div class="form-group">
+                    <label>플레이어 정보 입력</label>
+                    <div id="player-inputs-container" class="player-inputs-list">
+                        <!-- Dynamic player inputs will be generated here -->
+                    </div>
+                </div>
+
+                <button type="button" id="btn-start" class="btn btn-primary btn-lg">
+                    <span>Game Start 🎴</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. 두번째 화면 (Dashboard Screen) -->
+        <section id="dashboard-screen" class="screen">
+            <header class="dash-header">
+                <button type="button" id="btn-open-calc" class="btn btn-secondary btn-md">
+                    <span>💰 금액 계산</span>
+                </button>
+                <div class="dash-title">
+                    <h2>Go-Stop Money Flow</h2>
+                </div>
+                <button type="button" id="btn-prev-screen" class="btn btn-secondary btn-md">
+                    <span>⬅️ 이전화면</span>
+                </button>
+            </header>
+
+            <!-- Table/Layout for players -->
+            <div class="play-table-container">
+                <div class="play-table">
+                    <!-- Central Hub Info -->
+                    <div class="center-hub">
+                        <div class="hub-inner">
+                            <span class="hub-logo">🎴</span>
+                            <div class="hub-label">총 정산 횟수</div>
+                            <div id="total-transactions" class="hub-value">0회</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Players container for polygon placement -->
+                    <div id="players-ring" class="players-ring">
+                        <!-- Dynamic players will be placed here -->
+                    </div>
+                </div>
+            </div>
+
+            <footer class="dash-footer">
+                <button type="button" id="btn-end-game" class="btn btn-danger btn-lg">
+                    <span>게임 종료 🏁</span>
+                </button>
+            </footer>
+        </section>
+
+        <!-- 3. 프로그램 종료 화면 (Exit Screen) -->
+        <section id="exit-screen" class="screen">
+            <div class="glass-card setup-card text-center" style="text-align: center;">
+                <div class="logo-area">
+                    <span class="logo-icon" style="animation: none;">🏁</span>
+                    <h1>프로그램이 종료되었습니다</h1>
+                    <p class="subtitle" style="margin-top: 15px; font-size: 1.1rem; line-height: 1.6;">
+                        고스톱 대시보드 정산이 안전하게 종료되었습니다.<br>
+                        이 브라우저 탭이나 창을 닫아주시면 됩니다.
+                    </p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">
+                        * 브라우저 보안에 따라 자동으로 창이 닫히지 않을 수 있습니다.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 금액 계산 팝업 (Calculator Modal) -->
+        <div id="calc-modal" class="modal-overlay">
+            <div class="glass-card modal-card">
+                <div class="modal-header">
+                    <h3>💰 거래 금액 입력</h3>
+                    <button type="button" id="btn-close-modal" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-desc">누가 누구에게 얼마를 주어야 하는지 입력해 주세요.</p>
+                    
+                    <div id="transactions-container" class="transactions-list">
+                        <!-- Transaction rows will be dynamically populated here -->
+                    </div>
+                    
+                    <div class="modal-actions-sub">
+                        <button type="button" id="btn-add-row" class="btn btn-text">+ 입력창 추가</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btn-modal-cancel" class="btn btn-secondary">취소</button>
+                    <button type="button" id="btn-modal-ok" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consolidated Application Logic Script -->
+    <script>
+        // --- GO-STOP MONEY FLOW APPLICATION LOGIC ---
+
+        // Character and Fun Nickname Pool
+        const AVATARS = ['🦊', '🐷', '🐶', '🦁', '🐸', '🐼', '🐰', '🐹', '🐨', '🐱', '🦝', '🐻'];
+        const FUN_NAMES = ['독박이', '피박이', '광박이', '고도리', '청단이', '홍단이', '초단이', '흔들기', '설사', '쇼당', '쓰리고', '포고'];
+
+        // Application State
+        let state = {
+            players: [],
+            transactionsCount: 0
+        };
+
+        // DOM Elements
+        const setupScreen = document.getElementById('setup-screen');
+        const dashboardScreen = document.getElementById('dashboard-screen');
+        const exitScreen = document.getElementById('exit-screen');
+        const playerCountInput = document.getElementById('player-count');
+        const btnDecrease = document.getElementById('btn-decrease');
+        const btnIncrease = document.getElementById('btn-increase');
+        const playerInputsContainer = document.getElementById('player-inputs-container');
+        const btnStart = document.getElementById('btn-start');
+
+        const btnOpenCalc = document.getElementById('btn-open-calc');
+        const btnPrevScreen = document.getElementById('btn-prev-screen');
+        const btnEndGame = document.getElementById('btn-end-game');
+        const playersRing = document.getElementById('players-ring');
+        const totalTransactionsEl = document.getElementById('total-transactions');
+
+        const calcModal = document.getElementById('calc-modal');
+        const btnCloseModal = document.getElementById('btn-close-modal');
+        const btnModalCancel = document.getElementById('btn-modal-cancel');
+        const btnModalOk = document.getElementById('btn-modal-ok');
+        const btnAddRow = document.getElementById('btn-add-row');
+        const transactionsContainer = document.getElementById('transactions-container');
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initSetupInputs();
+            setupEventListeners();
+        });
+
+        // Setup Initial Player Input Rows (Default: 3 players)
+        function initSetupInputs() {
+            playerInputsContainer.innerHTML = '';
+            const initialCount = parseInt(playerCountInput.value) || 3;
+            
+            for (let i = 0; i < initialCount; i++) {
+                createPlayerInputRow(i);
+            }
+        }
+
+        // Create a single player input row in Setup Screen
+        function createPlayerInputRow(index) {
+            const row = document.createElement('div');
+            row.className = 'player-input-row';
+            row.dataset.index = index;
+
+            // Pick a random avatar and fun name suffix
+            const randomAvatar = AVATARS[index % AVATARS.length];
+            const defaultName = `플레이어${index + 1} (${FUN_NAMES[index % FUN_NAMES.length]})`;
+
+            row.innerHTML = `
+                <div class="player-avatar" title="클릭해서 이모지 변경">${randomAvatar}</div>
+                <input type="text" placeholder="${defaultName}" value="${defaultName}">
+            `;
+
+            // Emoji click change listener
+            const avatarEl = row.querySelector('.player-avatar');
+            avatarEl.addEventListener('click', () => {
+                const currentAvatar = avatarEl.textContent;
+                const currentIndex = AVATARS.indexOf(currentAvatar);
+                const nextIndex = (currentIndex + 1) % AVATARS.length;
+                avatarEl.textContent = AVATARS[nextIndex];
+            });
+
+            playerInputsContainer.appendChild(row);
+        }
+
+        // Adjust player count and inputs
+        function adjustPlayerCount(delta) {
+            let currentCount = parseInt(playerCountInput.value) || 3;
+            let newCount = currentCount + delta;
+            
+            // Validate bounds (Minimum 3, Maximum 12 for UI rendering)
+            if (newCount < 3) return;
+            if (newCount > 12) {
+                alert('최대 플레이 인원은 12명입니다.');
+                return;
+            }
+            
+            playerCountInput.value = newCount;
+            
+            if (delta > 0) {
+                // Add new rows
+                for (let i = currentCount; i < newCount; i++) {
+                    createPlayerInputRow(i);
+                }
+            } else {
+                // Remove rows from end
+                for (let i = currentCount - 1; i >= newCount; i--) {
+                    const rowToRemove = playerInputsContainer.querySelector(`.player-input-row[data-index="${i}"]`);
+                    if (rowToRemove) {
+                        rowToRemove.remove();
+                    }
+                }
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        function setupEventListeners() {
+            // Player Count Adjustment
+            btnDecrease.addEventListener('click', () => adjustPlayerCount(-1));
+            btnIncrease.addEventListener('click', () => adjustPlayerCount(1));
+            
+            // Start Game
+            btnStart.addEventListener('click', startGame);
+            
+            // Dashboard actions
+            btnOpenCalc.addEventListener('click', openCalcModal);
+            btnPrevScreen.addEventListener('click', goToSetupScreen);
+            btnEndGame.addEventListener('click', endGame);
+            
+            // Modal actions
+            btnCloseModal.addEventListener('click', closeCalcModal);
+            btnModalCancel.addEventListener('click', closeCalcModal);
+            btnModalOk.addEventListener('click', processTransactions);
+            btnAddRow.addEventListener('click', () => createTransactionRow());
+            
+            // Responsive dashboard redesign on window resize
+            window.addEventListener('resize', () => {
+                if (dashboardScreen.classList.contains('active')) {
+                    arrangePlayersInPolygon();
+                }
+            });
+        }
+
+        // --- SCREEN NAVIGATION ---
+
+        function startGame() {
+            const inputRows = playerInputsContainer.querySelectorAll('.player-input-row');
+            state.players = [];
+            state.transactionsCount = 0;
+            totalTransactionsEl.textContent = '0회';
+            
+            inputRows.forEach((row, idx) => {
+                const avatar = row.querySelector('.player-avatar').textContent;
+                const nameInput = row.querySelector('input');
+                let name = nameInput.value.trim();
+                if (!name) {
+                    name = nameInput.placeholder;
+                }
+                
+                state.players.push({
+                    id: `p-${idx}`,
+                    name: name,
+                    emoji: avatar,
+                    balance: 0,
+                    giveDetails: {}, // { recipientId: amount }
+                    receiveDetails: {} // { senderId: amount }
+                });
+            });
+            
+            // Switch Screen
+            setupScreen.classList.remove('active');
+            setTimeout(() => {
+                setupScreen.style.display = 'none';
+                dashboardScreen.style.display = 'block';
+                setTimeout(() => {
+                    dashboardScreen.classList.add('active');
+                    renderDashboard();
+                }, 50);
+            }, 500);
+        }
+
+        function goToSetupScreen() {
+            // No warning confirm prompt as requested: transition immediately
+            dashboardScreen.classList.remove('active');
+            setTimeout(() => {
+                dashboardScreen.style.display = 'none';
+                setupScreen.style.display = 'block';
+                setTimeout(() => {
+                    setupScreen.classList.add('active');
+                    initSetupInputs();
+                }, 50);
+            }, 500);
+        }
+
+        function endGame() {
+            const confirmEnd = confirm('정말 게임을 종료하시겠습니까?\n프로그램이 완전히 종료됩니다.');
+            if (!confirmEnd) return;
+            
+            dashboardScreen.classList.remove('active');
+            setTimeout(() => {
+                dashboardScreen.style.display = 'none';
+                exitScreen.style.display = 'block';
+                setTimeout(() => {
+                    exitScreen.classList.add('active');
+                    // Attempt to close the window
+                    window.close();
+                }, 50);
+            }, 500);
+        }
+
+        // --- DASHBOARD RENDER & LAYOUT ---
+
+        function renderDashboard() {
+            playersRing.innerHTML = '';
+            
+            state.players.forEach(player => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.id = `card-${player.id}`;
+                
+                // Determine balance class
+                let balanceClass = 'balance-zero';
+                let balanceSign = '';
+                if (player.balance > 0) {
+                    balanceClass = 'balance-plus';
+                    balanceSign = '+';
+                    card.classList.add('is-winner');
+                    card.classList.remove('is-loser');
+                } else if (player.balance < 0) {
+                    balanceClass = 'balance-minus';
+                    balanceSign = '';
+                    card.classList.add('is-loser');
+                    card.classList.remove('is-winner');
+                } else {
+                    card.classList.remove('is-winner', 'is-loser');
+                }
+                
+                // Build transaction details list
+                let txItemsHTML = '';
+                let hasTx = false;
+                
+                // Give transactions (Money to pay out)
+                for (const [targetId, amount] of Object.entries(player.giveDetails)) {
+                    if (amount > 0) {
+                        hasTx = true;
+                        const targetPlayer = state.players.find(p => p.id === targetId);
+                        const targetName = targetPlayer ? targetPlayer.name : '알수없음';
+                        txItemsHTML += `
+                            <div class="tx-item tx-give">
+                                <span class="tx-target" title="${targetName}">➔ ${targetName}</span>
+                                <span class="tx-amount">-${amount.toLocaleString()}원</span>
+                            </div>
+                        `;
+                    }
+                }
+                
+                // Receive transactions (Money to receive)
+                for (const [targetId, amount] of Object.entries(player.receiveDetails)) {
+                    if (amount > 0) {
+                        hasTx = true;
+                        const targetPlayer = state.players.find(p => p.id === targetId);
+                        const targetName = targetPlayer ? targetPlayer.name : '알수없음';
+                        txItemsHTML += `
+                            <div class="tx-item tx-receive">
+                                <span class="tx-target" title="${targetName}">➔ ${targetName}</span>
+                                <span class="tx-amount">+${amount.toLocaleString()}원</span>
+                            </div>
+                        `;
+                    }
+                }
+                
+                if (!hasTx) {
+                    txItemsHTML = '<div class="tx-empty">거래 내역 없음</div>';
+                }
+                
+                card.innerHTML = `
+                    <div class="player-card-header">
+                        <div class="player-card-avatar">${player.emoji}</div>
+                        <div class="player-card-info">
+                            <div class="player-card-name" title="${player.name}">${player.name}</div>
+                            <div class="player-card-balance ${balanceClass}">${balanceSign}${player.balance.toLocaleString()}원</div>
+                        </div>
+                    </div>
+                    <div class="player-card-transactions">
+                        ${txItemsHTML}
+                    </div>
+                `;
+                
+                playersRing.appendChild(card);
+            });
+            
+            arrangePlayersInPolygon();
+        }
+
+        // Arrange players in geometric polygon format around the central hub
+        function arrangePlayersInPolygon() {
+            const cards = playersRing.querySelectorAll('.player-card');
+            const n = cards.length;
+            if (n === 0) return;
+            
+            const ringContainer = document.querySelector('.play-table');
+            const ringWidth = ringContainer.clientWidth;
+            const ringHeight = ringContainer.clientHeight;
+            
+            const centerX = ringWidth / 2;
+            const centerY = ringHeight / 2;
+            
+            // Adjust radius to push players outwards (0.43 of width)
+            // This prevents overlaps with the central hub, especially for 3 and 5 players.
+            let radius = ringWidth * 0.43;
+            if (window.innerWidth <= 768) {
+                radius = ringWidth * 0.41;
+            }
+            
+            cards.forEach((card, idx) => {
+                // Divide circle into n points
+                // Offset by -Math.PI / 2 to start at 12 o'clock (top)
+                const angle = (idx * 2 * Math.PI) / n - Math.PI / 2;
+                
+                const cardWidth = card.clientWidth || 220;
+                const cardHeight = card.clientHeight || 150;
+                
+                // Calculate coordinates
+                const x = centerX + radius * Math.cos(angle) - cardWidth / 2;
+                const y = centerY + radius * Math.sin(angle) - cardHeight / 2;
+                
+                // Apply styling
+                card.style.left = `${x}px`;
+                card.style.top = `${y}px`;
+            });
+        }
+
+        // --- MODAL & CALCULATOR LOGIC ---
+
+        function openCalcModal() {
+            transactionsContainer.innerHTML = '';
+            
+            // Setup default 2 transaction rows as requested
+            const defaultRowsCount = 2;
+            
+            for (let i = 0; i < defaultRowsCount; i++) {
+                createTransactionRow(i);
+            }
+            
+            calcModal.classList.add('active');
+        }
+
+        function closeCalcModal() {
+            calcModal.classList.remove('active');
+        }
+
+        // Dynamically create a transaction input row in the Modal
+        function createTransactionRow(index = null) {
+            const row = document.createElement('div');
+            row.className = 'tx-row';
+            
+            // Generate sender dropdown options
+            let senderOptions = '';
+            let receiverOptions = '';
+            
+            state.players.forEach((p, idx) => {
+                // default sender (different for rows)
+                const isDefaultSender = index !== null && (idx === index % state.players.length);
+                // default receiver (typically the last player is the winner/receiver or vice versa)
+                const isDefaultReceiver = index !== null && (idx === (index + 1) % state.players.length);
+                
+                senderOptions += `<option value="${p.id}" ${isDefaultSender ? 'selected' : ''}>${p.emoji} ${p.name}</option>`;
+                receiverOptions += `<option value="${p.id}" ${isDefaultReceiver ? 'selected' : ''}>${p.emoji} ${p.name}</option>`;
+            });
+            
+            row.innerHTML = `
+                <div class="tx-sender-select">
+                    <select class="select-sender">
+                        ${senderOptions}
+                    </select>
+                </div>
+                <div class="tx-give-text">가</div>
+                <div class="tx-receiver-select">
+                    <select class="select-receiver">
+                        ${receiverOptions}
+                    </select>
+                </div>
+                <div class="tx-arrow">➔</div>
+                <div class="tx-amount-input">
+                    <input type="number" class="input-amount" placeholder="금액 입력" min="0" step="100">
+                </div>
+                <div class="tx-currency-label">원 보냄</div>
+                <button type="button" class="btn-remove-row" title="행 삭제">&times;</button>
+            `;
+            
+            // Bind change filters to prevent sending to oneself
+            const selectSender = row.querySelector('.select-sender');
+            const selectReceiver = row.querySelector('.select-receiver');
+            
+            const preventSelfSelection = () => {
+                if (selectSender.value === selectReceiver.value) {
+                    // Find another option
+                    for (let opt of selectReceiver.options) {
+                        if (opt.value !== selectSender.value) {
+                            selectReceiver.value = opt.value;
+                            break;
+                        }
+                    }
+                }
+            };
+            
+            selectSender.addEventListener('change', preventSelfSelection);
+            selectReceiver.addEventListener('change', preventSelfSelection);
+            
+            // Trigger check immediately
+            preventSelfSelection();
+            
+            // Remove row listener
+            const btnRemove = row.querySelector('.btn-remove-row');
+            btnRemove.addEventListener('click', () => {
+                // Keep at least one row
+                if (transactionsContainer.querySelectorAll('.tx-row').length > 1) {
+                    row.remove();
+                } else {
+                    alert('최소 한 개의 거래 입력 창은 필요합니다.');
+                }
+            });
+            
+            transactionsContainer.appendChild(row);
+        }
+
+        // Calculate and process transaction inputs
+        function processTransactions() {
+            const rows = transactionsContainer.querySelectorAll('.tx-row');
+            const newTransactions = [];
+            
+            let isValid = true;
+            
+            rows.forEach((row, index) => {
+                const senderId = row.querySelector('.select-sender').value;
+                const receiverId = row.querySelector('.select-receiver').value;
+                const amountVal = row.querySelector('.input-amount').value.trim();
+                
+                if (senderId === receiverId) {
+                    alert(`${index + 1}번째 줄: 자기 자신에게 돈을 보낼 수 없습니다.`);
+                    isValid = false;
+                    return;
+                }
+                
+                if (amountVal === '' || isNaN(amountVal)) {
+                    return;
+                }
+                
+                const amount = parseInt(amountVal);
+                if (amount < 0) {
+                    alert(`${index + 1}번째 줄: 금액은 0원 이상이어야 합니다.`);
+                    isValid = false;
+                    return;
+                }
+                
+                // Only queue transactions that actually transfer money (> 0)
+                if (amount > 0) {
+                    newTransactions.push({
+                        senderId,
+                        receiverId,
+                        amount
+                    });
+                }
+            });
+            
+            if (!isValid) return;
+            
+            if (newTransactions.length === 0) {
+                // If there are no positive transactions, close modal silently
+                closeCalcModal();
+                return;
+            }
+            
+            // Process transactions and update player balances cumulatively
+            newTransactions.forEach(tx => {
+                const sender = state.players.find(p => p.id === tx.senderId);
+                const receiver = state.players.find(p => p.id === tx.receiverId);
+                
+                if (sender && receiver) {
+                    // Update individual balances
+                    sender.balance -= tx.amount;
+                    receiver.balance += tx.amount;
+                    
+                    // Record direct transactions (who owes who / who gets from who)
+                    if (!sender.giveDetails[tx.receiverId]) {
+                        sender.giveDetails[tx.receiverId] = 0;
+                    }
+                    sender.giveDetails[tx.receiverId] += tx.amount;
+                    
+                    if (!receiver.receiveDetails[tx.senderId]) {
+                        receiver.receiveDetails[tx.senderId] = 0;
+                    }
+                    receiver.receiveDetails[tx.senderId] += tx.amount;
+                }
+            });
+            
+            // Optimize transaction details (Simplify cash flows)
+            simplifyDebts();
+            
+            state.transactionsCount++;
+            totalTransactionsEl.textContent = `${state.transactionsCount}회`;
+            
+            // Re-render
+            renderDashboard();
+            closeCalcModal();
+        }
+
+        /**
+         * Debt Simplification Algorithm (Min Cash Flow)
+         */
+        function simplifyDebts() {
+            state.players.forEach(p => {
+                p.giveDetails = {};
+                p.receiveDetails = {};
+            });
+            
+            let participants = state.players.map(p => ({
+                id: p.id,
+                net: p.balance
+            }));
+            
+            let debtors = participants.filter(p => p.net < 0).sort((a, b) => a.net - b.net);
+            let creditors = participants.filter(p => p.net > 0).sort((a, b) => b.net - a.net);
+            
+            let dIdx = 0;
+            let cIdx = 0;
+            
+            while (dIdx < debtors.length && cIdx < creditors.length) {
+                let debtor = debtors[dIdx];
+                let creditor = creditors[cIdx];
+                
+                let debtAmount = Math.abs(debtor.net);
+                let creditAmount = creditor.net;
+                let settleAmount = Math.min(debtAmount, creditAmount);
+                
+                debtor.net += settleAmount;
+                creditor.net -= settleAmount;
+                
+                const debtorPlayer = state.players.find(p => p.id === debtor.id);
+                const creditorPlayer = state.players.find(p => p.id === creditor.id);
+                
+                if (debtorPlayer && creditorPlayer && settleAmount > 0) {
+                    debtorPlayer.giveDetails[creditorPlayer.id] = (debtorPlayer.giveDetails[creditorPlayer.id] || 0) + settleAmount;
+                    creditorPlayer.receiveDetails[debtorPlayer.id] = (creditorPlayer.receiveDetails[debtorPlayer.id] || 0) + settleAmount;
+                }
+                
+                if (Math.abs(debtor.net) < 1) {
+                    dIdx++;
+                }
+                if (creditor.net < 1) {
+                    cIdx++;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
