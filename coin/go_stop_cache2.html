@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>고스톱 정산</title>
+  <style>
+    :root {
+      --bg:       #111;
+      --surface:  #1c1c1e;
+      --surface2: #2c2c2e;
+      --border:   rgba(255,255,255,0.1);
+      --text:     #f0f0f0;
+      --muted:    #888;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --gold:     #f59e0b;
+      --radius:   16px;
+      --radius-s: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── 공통 ── */
+    .hidden { display: none !important; }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    /* ══════════════════════════════
+       설정 화면
+    ══════════════════════════════ */
+    #setup {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px 32px;
+    }
+
+    .setup-header {
+      text-align: center;
+      padding: 28px 0 36px;
+    }
+
+    .setup-icon { font-size: 3rem; line-height: 1; }
+    .setup-title { font-size: 1.6rem; font-weight: 800; margin-top: 10px; letter-spacing: -0.5px; }
+
+    /* 인원 카운터 */
+    .count-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .count-btn {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-s);
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .count-btn:active { background: var(--green); color: #fff; }
+
+    .count-value {
+      font-size: 2rem;
+      font-weight: 800;
+      min-width: 2ch;
+      text-align: center;
+    }
+
+    /* 플레이어 입력 */
+    .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border-radius: var(--radius-s);
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+    }
+
+    .emoji-btn {
+      font-size: 1.6rem;
+      background: var(--surface2);
+      border: none;
+      border-radius: 8px;
+      width: 42px; height: 42px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s;
+    }
+    .emoji-btn:active { transform: scale(0.9); }
+
+    .player-name-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .player-name-input::placeholder { color: var(--muted); }
+
+    .btn-start {
+      width: 100%;
+      padding: 17px;
+      background: var(--green);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      margin-top: auto;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+    .btn-start:active { opacity: 0.85; }
+
+    /* ══════════════════════════════
+       게임 화면
+    ══════════════════════════════ */
+    #game {
+      display: none;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* 상단 바 */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .topbar-center { text-align: center; }
+    .topbar-title  { font-size: 0.95rem; font-weight: 700; }
+    .topbar-rounds { font-size: 0.78rem; color: var(--muted); margin-top: 1px; }
+
+    .btn-icon {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      color: var(--text);
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-icon:active { background: var(--surface2); }
+
+    /* 본문 */
+    .game-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    /* 플레이어 카드 그리드 — 모바일 기본 2열 */
+    .player-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    @media (min-width: 600px)  { .player-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 900px)  { .player-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    .p-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+      transition: border-color 0.2s;
+    }
+    .p-card.is-winner { border-color: var(--green); }
+    .p-card.is-loser  { border-color: var(--red); }
+
+    .p-emoji   { font-size: 1.8rem; line-height: 1; }
+    .p-name    { font-size: 0.82rem; font-weight: 600; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .p-balance { font-size: 1.05rem; font-weight: 800; margin-top: 4px; }
+    .p-balance.plus  { color: var(--green); }
+    .p-balance.minus { color: var(--red); }
+    .p-balance.zero  { color: var(--muted); }
+
+    .p-settle {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      font-size: 0.7rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .settle-row { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+    .settle-target { color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .settle-pay  { color: var(--red);   font-weight: 700; white-space: nowrap; }
+    .settle-recv { color: var(--green); font-weight: 700; white-space: nowrap; }
+
+    /* 판 기록 */
+    .history-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 24px 0;
+    }
+
+    .round-item {
+      background: var(--surface);
+      border-radius: var(--radius-s);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .round-num     { font-size: 0.72rem; color: var(--muted); }
+    .round-summary { font-size: 0.82rem; font-weight: 500; margin-top: 2px; }
+
+    .btn-undo {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-undo:active { background: var(--surface2); color: var(--red); border-color: var(--red); }
+
+    /* 하단 액션 바 */
+    .game-footer {
+      padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-add-round {
+      flex: 1;
+      padding: 15px;
+      background: var(--green);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+    .btn-add-round:active { opacity: 0.85; }
+
+    .btn-end-game {
+      padding: 15px 18px;
+      background: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-end-game:active { background: var(--surface2); }
+
+    /* ══════════════════════════════
+       바텀시트 / 모달
+    ══════════════════════════════ */
+    .sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 50;
+      display: flex;
+      align-items: flex-end; /* 기본: 모바일 바텀시트 */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .sheet-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet-card {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 8px 16px 0;
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      width: 100%;
+      max-height: 88dvh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .sheet-overlay.open .sheet-card { transform: translateY(0); }
+
+    /* 데스크톱: 중앙 모달로 전환 */
+    @media (min-width: 640px) {
+      .sheet-overlay { align-items: center; }
+      .sheet-card {
+        border-radius: 20px;
+        max-width: 500px;
+        margin: 0 auto;
+        max-height: 80dvh;
+        transform: scale(0.93) translateY(8px);
+        transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .sheet-overlay.open .sheet-card { transform: scale(1) translateY(0); }
+      .sheet-handle { display: none !important; }
+    }
+
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 6px auto 14px;
+      flex-shrink: 0;
+    }
+
+    .sheet-header { flex-shrink: 0; padding-bottom: 4px; }
+    .sheet-title    { font-size: 1.1rem; font-weight: 700; }
+    .sheet-subtitle { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    /* 합계 표시 */
+    .sum-bar {
+      flex-shrink: 0;
+      margin: 12px 0 8px;
+      padding: 9px 14px;
+      border-radius: var(--radius-s);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sum-ok  { background: rgba(34,197,94,0.12);  color: var(--green); }
+    .sum-bad { background: rgba(239,68,68,0.12);  color: var(--red);   }
+
+    /* 라운드 입력 목록 */
+    .round-inputs {
+      overflow-y: auto;
+      flex: 1;
+      margin: 0 -16px;
+      padding: 0 16px;
+    }
+
+    .ri-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ri-row:last-child { border-bottom: none; }
+
+    .ri-emoji { font-size: 1.5rem; min-width: 30px; text-align: center; flex-shrink: 0; }
+    .ri-name  { flex: 1; font-size: 0.88rem; font-weight: 500; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .ri-amount {
+      width: 110px;
+      text-align: right;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 9px 10px;
+      outline: none;
+      -moz-appearance: textfield;
+      transition: border-color 0.15s;
+    }
+    .ri-amount::-webkit-inner-spin-button,
+    .ri-amount::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .ri-amount:focus { border-color: var(--green); }
+
+    .ri-unit { font-size: 0.78rem; color: var(--muted); flex-shrink: 0; }
+
+    /* 시트 하단 버튼 */
+    .sheet-footer {
+      display: flex;
+      gap: 10px;
+      padding: 14px 0 6px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .btn-sheet-cancel {
+      flex: 1;
+      padding: 14px;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-sheet-cancel:active { opacity: 0.7; }
+
+    .btn-sheet-ok {
+      flex: 2;
+      padding: 14px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+    .btn-sheet-ok:active  { opacity: 0.85; }
+    .btn-sheet-ok:disabled { opacity: 0.35; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<!-- ══ 설정 화면 ══ -->
+<div id="setup">
+  <div class="setup-header">
+    <div class="setup-icon">🎴</div>
+    <div class="setup-title">고스톱 정산</div>
+  </div>
+
+  <div class="section-label">플레이어 수</div>
+  <div class="count-row">
+    <button class="count-btn" id="btn-minus">−</button>
+    <div class="count-value" id="count-display">3</div>
+    <button class="count-btn" id="btn-plus">+</button>
+  </div>
+
+  <div class="section-label">이름 / 이모지</div>
+  <div class="player-list" id="player-list"></div>
+
+  <button class="btn-start" id="btn-start">게임 시작 🎴</button>
+</div>
+
+<!-- ══ 게임 화면 ══ -->
+<div id="game">
+  <div class="topbar">
+    <button class="btn-icon" id="btn-back">← 처음</button>
+    <div class="topbar-center">
+      <div class="topbar-title">고스톱 정산</div>
+      <div class="topbar-rounds" id="rounds-label">0판 진행 중</div>
+    </div>
+    <div style="width:58px"></div>
+  </div>
+
+  <div class="game-body">
+    <div class="player-grid" id="player-grid"></div>
+
+    <div>
+      <div class="history-label">판 기록</div>
+      <div id="round-history"></div>
+    </div>
+  </div>
+
+  <div class="game-footer">
+    <button class="btn-add-round" id="btn-add-round">＋ 이번 판 결과 입력</button>
+    <button class="btn-end-game" id="btn-end">종료</button>
+  </div>
+</div>
+
+<!-- ══ 바텀시트 / 모달 ══ -->
+<div class="sheet-overlay" id="sheet">
+  <div class="sheet-card">
+    <div class="sheet-handle"></div>
+
+    <div class="sheet-header">
+      <div class="sheet-title">이번 판 결과 입력</div>
+      <div class="sheet-subtitle">각 플레이어의 이번 판 결과를 입력하세요. 합계는 반드시 0원이어야 합니다.</div>
+    </div>
+
+    <div class="sum-bar sum-ok" id="sum-bar">합계: 0원 ✓</div>
+
+    <div class="round-inputs" id="round-inputs"></div>
+
+    <div class="sheet-footer">
+      <button class="btn-sheet-cancel" id="btn-sheet-cancel">취소</button>
+      <button class="btn-sheet-ok"     id="btn-sheet-ok">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── 상수 ── */
+  const AVATARS = ['🦊','🐷','🐶','🦁','🐸','🐼','🐰','🐹','🐨','🐱','🦝','🐻'];
+
+  /* ── 상태 ── */
+  let state = {
+    players: [],  // {id, name, emoji}
+    rounds:  [],  // [{id, results: {playerId: amount}}]
+  };
+
+  /* ── 파생 데이터 ── */
+  function getBalances() {
+    const bal = {};
+    state.players.forEach(p => { bal[p.id] = 0; });
+    state.rounds.forEach(r => {
+      Object.entries(r.results).forEach(([pid, amt]) => { bal[pid] += amt; });
+    });
+    return bal;
+  }
+
+  function getSettlements() {
+    const balances = getBalances();
+    const debtors   = [];
+    const creditors = [];
+
+    state.players.forEach(p => {
+      const b = balances[p.id] || 0;
+      if (b < -0.5)  debtors.push({ id: p.id, amount: -b });
+      else if (b > 0.5) creditors.push({ id: p.id, amount: b });
+    });
+
+    debtors.sort((a, b) => b.amount - a.amount);
+    creditors.sort((a, b) => b.amount - a.amount);
+
+    const result = [];
+    let di = 0, ci = 0;
+    while (di < debtors.length && ci < creditors.length) {
+      const pay = Math.min(debtors[di].amount, creditors[ci].amount);
+      if (pay > 0.5) result.push({ from: debtors[di].id, to: creditors[ci].id, amount: Math.round(pay) });
+      debtors[di].amount   -= pay;
+      creditors[ci].amount -= pay;
+      if (debtors[di].amount   < 0.5) di++;
+      if (creditors[ci].amount < 0.5) ci++;
+    }
+    return result;
+  }
+
+  /* ══════════════════════════════
+     설정 화면
+  ══════════════════════════════ */
+  let playerCount = 3;
+  let playerSetup = [];
+
+  function initSetup() {
+    playerSetup = Array.from({ length: playerCount }, (_, i) => ({
+      emoji: AVATARS[i % AVATARS.length],
+      name:  `플레이어${i + 1}`,
+    }));
+    renderSetup();
+  }
+
+  function renderSetup() {
+    document.getElementById('count-display').textContent = playerCount;
+    const list = document.getElementById('player-list');
+    list.innerHTML = '';
+
+    playerSetup.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'player-row';
+      row.innerHTML = `
+        <button class="emoji-btn" data-i="${i}">${p.emoji}</button>
+        <input class="player-name-input" type="text" value="${p.name}" data-i="${i}" placeholder="이름">
+      `;
+      list.appendChild(row);
+    });
+
+    list.querySelectorAll('.emoji-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = +btn.dataset.i;
+        const cur = AVATARS.indexOf(playerSetup[i].emoji);
+        playerSetup[i].emoji = AVATARS[(cur + 1) % AVATARS.length];
+        btn.textContent = playerSetup[i].emoji;
+      });
+    });
+
+    list.querySelectorAll('.player-name-input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        playerSetup[+inp.dataset.i].name = inp.value;
+      });
+    });
+  }
+
+  document.getElementById('btn-minus').addEventListener('click', () => {
+    if (playerCount <= 3) return;
+    playerCount--;
+    playerSetup.pop();
+    renderSetup();
+  });
+
+  document.getElementById('btn-plus').addEventListener('click', () => {
+    if (playerCount >= 8) return;
+    playerCount++;
+    playerSetup.push({ emoji: AVATARS[(playerCount - 1) % AVATARS.length], name: `플레이어${playerCount}` });
+    renderSetup();
+  });
+
+  document.getElementById('btn-start').addEventListener('click', () => {
+    state.players = playerSetup.map((p, i) => ({
+      id:    `p${i}`,
+      name:  p.name.trim() || `플레이어${i + 1}`,
+      emoji: p.emoji,
+    }));
+    state.rounds = [];
+    showGame();
+  });
+
+  /* ══════════════════════════════
+     게임 화면
+  ══════════════════════════════ */
+  function showGame() {
+    document.getElementById('setup').style.display = 'none';
+    const game = document.getElementById('game');
+    game.style.display = 'flex';
+    renderGame();
+  }
+
+  function renderGame() {
+    const balances    = getBalances();
+    const settlements = getSettlements();
+
+    document.getElementById('rounds-label').textContent = `${state.rounds.length}판 진행 중`;
+
+    /* 플레이어 카드 */
+    const grid = document.getElementById('player-grid');
+    grid.innerHTML = '';
+
+    state.players.forEach(p => {
+      const bal   = balances[p.id] || 0;
+      const cls   = bal > 0 ? 'plus' : bal < 0 ? 'minus' : 'zero';
+      const sign  = bal > 0 ? '+' : '';
+      const myS   = settlements.filter(s => s.from === p.id || s.to === p.id);
+
+      let settleHTML = '';
+      myS.forEach(s => {
+        if (s.from === p.id) {
+          const who = state.players.find(x => x.id === s.to);
+          settleHTML += `
+            <div class="settle-row">
+              <span class="settle-target">${who?.emoji} ${who?.name}에게</span>
+              <span class="settle-pay">-${s.amount.toLocaleString()}원</span>
+            </div>`;
+        } else {
+          const who = state.players.find(x => x.id === s.from);
+          settleHTML += `
+            <div class="settle-row">
+              <span class="settle-target">${who?.emoji} ${who?.name}에게서</span>
+              <span class="settle-recv">+${s.amount.toLocaleString()}원</span>
+            </div>`;
+        }
+      });
+
+      const card = document.createElement('div');
+      card.className = `p-card${bal > 0 ? ' is-winner' : bal < 0 ? ' is-loser' : ''}`;
+      card.innerHTML = `
+        <div class="p-emoji">${p.emoji}</div>
+        <div class="p-name" title="${p.name}">${p.name}</div>
+        <div class="p-balance ${cls}">${sign}${bal.toLocaleString()}원</div>
+        ${settleHTML ? `<div class="p-settle">${settleHTML}</div>` : ''}
+      `;
+      grid.appendChild(card);
+    });
+
+    /* 판 기록 */
+    const histEl = document.getElementById('round-history');
+    if (state.rounds.length === 0) {
+      histEl.innerHTML = '<div class="history-empty">아직 입력된 판이 없습니다</div>';
+      return;
+    }
+
+    histEl.innerHTML = '';
+    [...state.rounds].reverse().forEach((round, ri) => {
+      const origIdx = state.rounds.length - 1 - ri;
+      const winners = state.players.filter(p => (round.results[p.id] || 0) > 0);
+      const summary = winners.map(p =>
+        `${p.emoji} ${p.name} +${(round.results[p.id]).toLocaleString()}원`
+      ).join(', ') || '변동 없음';
+
+      const isLast = origIdx === state.rounds.length - 1;
+      const item = document.createElement('div');
+      item.className = 'round-item';
+      item.innerHTML = `
+        <div>
+          <div class="round-num">${origIdx + 1}판</div>
+          <div class="round-summary">${summary}</div>
+        </div>
+        ${isLast ? `<button class="btn-undo" data-idx="${origIdx}">↩ 취소</button>` : ''}
+      `;
+      histEl.appendChild(item);
+    });
+
+    histEl.querySelector('.btn-undo')?.addEventListener('click', e => {
+      const idx = +e.currentTarget.dataset.idx;
+      state.rounds.splice(idx, 1);
+      renderGame();
+    });
+  }
+
+  document.getElementById('btn-back').addEventListener('click', () => {
+    if (state.rounds.length > 0 &&
+        !confirm('처음 화면으로 돌아가면 현재 게임 기록이 사라집니다. 계속하시겠습니까?')) return;
+    document.getElementById('game').style.display = 'none';
+    document.getElementById('setup').style.display = 'flex';
+    initSetup();
+  });
+
+  document.getElementById('btn-end').addEventListener('click', () => {
+    if (!confirm('게임을 종료하시겠습니까?')) return;
+    document.getElementById('game').style.display = 'none';
+    document.getElementById('setup').style.display = 'flex';
+    state.rounds = [];
+    initSetup();
+  });
+
+  /* ══════════════════════════════
+     바텀시트
+  ══════════════════════════════ */
+  function openSheet() {
+    const inputs = document.getElementById('round-inputs');
+    inputs.innerHTML = '';
+
+    state.players.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'ri-row';
+      row.innerHTML = `
+        <span class="ri-emoji">${p.emoji}</span>
+        <span class="ri-name">${p.name}</span>
+        <input class="ri-amount" type="number" inputmode="numeric" data-pid="${p.id}" placeholder="0" step="100">
+        <span class="ri-unit">원</span>
+      `;
+      inputs.appendChild(row);
+    });
+
+    inputs.querySelectorAll('.ri-amount').forEach(inp => {
+      inp.addEventListener('input', updateSum);
+    });
+
+    updateSum();
+    document.getElementById('sheet').classList.add('open');
+
+    /* 첫 번째 입력 포커스 (데스크톱) */
+    if (window.innerWidth >= 640) {
+      setTimeout(() => inputs.querySelector('.ri-amount')?.focus(), 320);
+    }
+  }
+
+  function closeSheet() {
+    document.getElementById('sheet').classList.remove('open');
+  }
+
+  function updateSum() {
+    let sum = 0;
+    document.querySelectorAll('.ri-amount').forEach(inp => {
+      sum += parseInt(inp.value || '0') || 0;
+    });
+
+    const bar  = document.getElementById('sum-bar');
+    const okBtn = document.getElementById('btn-sheet-ok');
+
+    if (sum === 0) {
+      bar.className = 'sum-bar sum-ok';
+      bar.textContent = '합계: 0원 ✓';
+      okBtn.disabled = false;
+    } else {
+      bar.className = 'sum-bar sum-bad';
+      bar.textContent = `합계: ${sum > 0 ? '+' : ''}${sum.toLocaleString()}원 (합계가 0이 되어야 합니다)`;
+      okBtn.disabled = true;
+    }
+  }
+
+  document.getElementById('btn-add-round').addEventListener('click', openSheet);
+
+  document.getElementById('btn-sheet-cancel').addEventListener('click', closeSheet);
+
+  document.getElementById('sheet').addEventListener('click', e => {
+    if (e.target === document.getElementById('sheet')) closeSheet();
+  });
+
+  document.getElementById('btn-sheet-ok').addEventListener('click', () => {
+    const results = {};
+    let sum = 0;
+
+    document.querySelectorAll('.ri-amount').forEach(inp => {
+      const amt = parseInt(inp.value || '0') || 0;
+      results[inp.dataset.pid] = amt;
+      sum += amt;
+    });
+
+    if (sum !== 0) return;
+
+    const hasChange = Object.values(results).some(v => v !== 0);
+    if (hasChange) {
+      state.rounds.push({ id: Date.now(), results });
+    }
+
+    closeSheet();
+    renderGame();
+  });
+
+  /* ── 초기화 ── */
+  initSetup();
+</script>
+</body>
+</html>
