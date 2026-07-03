@@ -33,6 +33,11 @@
         }
 
         /* Base Reset */
+        html {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -46,6 +51,7 @@
             color: var(--text-main);
             min-height: 100vh;
             overflow-x: hidden;
+            max-width: 100vw;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -66,8 +72,8 @@
 
         .bg-glow {
             position: absolute;
-            width: 450px;
-            height: 450px;
+            width: min(450px, 100vw);
+            height: min(450px, 100vw);
             border-radius: 50%;
             filter: blur(150px);
             opacity: 0.15;
