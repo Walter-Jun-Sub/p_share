@@ -1588,10 +1588,34 @@
             
             selectSender.addEventListener('change', preventSelfSelection);
             selectReceiver.addEventListener('change', preventSelfSelection);
-            
+
             // Trigger check immediately
             preventSelfSelection();
-            
+
+            // 첫 번째 행의 수신자(승리자)가 바뀌면 나머지 행에도 자동 반영
+            if (index === 0) {
+                selectReceiver.addEventListener('change', () => {
+                    const winnerId = selectReceiver.value;
+                    const allRows = transactionsContainer.querySelectorAll('.tx-row');
+                    allRows.forEach((otherRow, i) => {
+                        if (i === 0) return;
+                        const otherReceiver = otherRow.querySelector('.select-receiver');
+                        const otherSender   = otherRow.querySelector('.select-sender');
+                        if (!otherReceiver || !otherSender) return;
+                        otherReceiver.value = winnerId;
+                        // 자기 자신에게 보내는 경우 다른 옵션으로 교체
+                        if (otherSender.value === otherReceiver.value) {
+                            for (const opt of otherReceiver.options) {
+                                if (opt.value !== otherSender.value) {
+                                    otherReceiver.value = opt.value;
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
             // Remove row listener
             const btnRemove = row.querySelector('.btn-remove-row');
             btnRemove.addEventListener('click', () => {
