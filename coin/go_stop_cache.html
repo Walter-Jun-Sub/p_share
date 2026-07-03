@@ -1536,30 +1536,24 @@
             const row = document.createElement('div');
             row.className = 'tx-row';
             
-            // Generate sender dropdown options
-            let senderOptions = '';
-            let receiverOptions = '';
-            
-            state.players.forEach((p, idx) => {
-                // default sender (different for rows)
-                const isDefaultSender = index !== null && (idx === index % state.players.length);
-                // default receiver (typically the last player is the winner/receiver or vice versa)
-                const isDefaultReceiver = index !== null && (idx === (index + 1) % state.players.length);
-                
-                senderOptions += `<option value="${p.id}" ${isDefaultSender ? 'selected' : ''}>${p.emoji} ${p.name}</option>`;
-                receiverOptions += `<option value="${p.id}" ${isDefaultReceiver ? 'selected' : ''}>${p.emoji} ${p.name}</option>`;
+            // Generate sender/receiver dropdown options (no default selection)
+            let playerOptions = '';
+            state.players.forEach(p => {
+                playerOptions += `<option value="${p.id}">${p.emoji} ${p.name}</option>`;
             });
-            
+
             row.innerHTML = `
                 <div class="tx-sender-select">
                     <select class="select-sender">
-                        ${senderOptions}
+                        <option value="">보내는 사람</option>
+                        ${playerOptions}
                     </select>
                 </div>
                 <div class="tx-give-text">가</div>
                 <div class="tx-receiver-select">
                     <select class="select-receiver">
-                        ${receiverOptions}
+                        <option value="">받는 사람</option>
+                        ${playerOptions}
                     </select>
                 </div>
                 <div class="tx-arrow">➔</div>
@@ -1574,25 +1568,18 @@
             const selectSender = row.querySelector('.select-sender');
             const selectReceiver = row.querySelector('.select-receiver');
             
+            // 송신자 = 수신자가 되는 경우 수신자를 빈값으로 초기화
             const preventSelfSelection = () => {
+                if (!selectSender.value || !selectReceiver.value) return;
                 if (selectSender.value === selectReceiver.value) {
-                    // Find another option
-                    for (let opt of selectReceiver.options) {
-                        if (opt.value !== selectSender.value) {
-                            selectReceiver.value = opt.value;
-                            break;
-                        }
-                    }
+                    selectReceiver.value = '';
                 }
             };
-            
+
             selectSender.addEventListener('change', preventSelfSelection);
             selectReceiver.addEventListener('change', preventSelfSelection);
 
-            // Trigger check immediately
-            preventSelfSelection();
-
-            // 첫 번째 행의 수신자(승리자)가 바뀌면 나머지 행에도 자동 반영
+            // 첫 번째 행의 수신자(승리자)가 선택되면 나머지 행에도 자동 반영
             if (index === 0) {
                 selectReceiver.addEventListener('change', () => {
                     const winnerId = selectReceiver.value;
@@ -1603,14 +1590,9 @@
                         const otherSender   = otherRow.querySelector('.select-sender');
                         if (!otherReceiver || !otherSender) return;
                         otherReceiver.value = winnerId;
-                        // 자기 자신에게 보내는 경우 다른 옵션으로 교체
-                        if (otherSender.value === otherReceiver.value) {
-                            for (const opt of otherReceiver.options) {
-                                if (opt.value !== otherSender.value) {
-                                    otherReceiver.value = opt.value;
-                                    break;
-                                }
-                            }
+                        // 송신자와 같으면 빈값으로 초기화 (사용자가 직접 선택)
+                        if (otherSender.value && otherSender.value === otherReceiver.value) {
+                            otherReceiver.value = '';
                         }
                     });
                 });
@@ -1642,12 +1624,21 @@
                 const receiverId = row.querySelector('.select-receiver').value;
                 const amountVal = row.querySelector('.input-amount').value.trim();
                 
+                // 송신자/수신자 미선택 시 금액이 없으면 무시, 있으면 경고
+                if (!senderId || !receiverId) {
+                    if (amountVal !== '' && parseInt(amountVal) > 0) {
+                        alert(`${index + 1}번째 줄: 보내는 사람과 받는 사람을 선택해 주세요.`);
+                        isValid = false;
+                    }
+                    return;
+                }
+
                 if (senderId === receiverId) {
                     alert(`${index + 1}번째 줄: 자기 자신에게 돈을 보낼 수 없습니다.`);
                     isValid = false;
                     return;
                 }
-                
+
                 if (amountVal === '' || isNaN(amountVal)) {
                     return;
                 }
