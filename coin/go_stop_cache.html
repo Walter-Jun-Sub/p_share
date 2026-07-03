@@ -1340,8 +1340,7 @@
                     name: name,
                     emoji: avatar,
                     balance: 0,
-                    giveDetails: {}, // { recipientId: amount }
-                    receiveDetails: {} // { senderId: amount }
+                    transfers: {} // { recipientId: totalGiven }
                 });
             });
             
@@ -1417,35 +1416,30 @@
                 let txItemsHTML = '';
                 let hasTx = false;
                 
-                // Give transactions (Money to pay out)
-                for (const [targetId, amount] of Object.entries(player.giveDetails)) {
-                    if (amount > 0) {
-                        hasTx = true;
-                        const targetPlayer = state.players.find(p => p.id === targetId);
-                        const targetName = targetPlayer ? targetPlayer.name : '알수없음';
+                // Bilateral netting: 각 상대와의 순 금액 표시
+                state.players.forEach(other => {
+                    if (other.id === player.id) return;
+                    const gave     = player.transfers[other.id] || 0;
+                    const received = other.transfers[player.id] || 0;
+                    const net      = gave - received;
+                    if (net === 0) return;
+                    hasTx = true;
+                    if (net > 0) {
                         txItemsHTML += `
                             <div class="tx-item tx-give">
-                                <span class="tx-target" title="${targetName}">➔ ${targetName}</span>
-                                <span class="tx-amount">-${amount.toLocaleString()}원</span>
+                                <span class="tx-target" title="${other.name}">➔ ${other.name}</span>
+                                <span class="tx-amount">-${net.toLocaleString()}원</span>
                             </div>
                         `;
-                    }
-                }
-                
-                // Receive transactions (Money to receive)
-                for (const [targetId, amount] of Object.entries(player.receiveDetails)) {
-                    if (amount > 0) {
-                        hasTx = true;
-                        const targetPlayer = state.players.find(p => p.id === targetId);
-                        const targetName = targetPlayer ? targetPlayer.name : '알수없음';
+                    } else {
                         txItemsHTML += `
                             <div class="tx-item tx-receive">
-                                <span class="tx-target" title="${targetName}">➔ ${targetName}</span>
-                                <span class="tx-amount">+${amount.toLocaleString()}원</span>
+                                <span class="tx-target" title="${other.name}">➔ ${other.name}</span>
+                                <span class="tx-amount">+${Math.abs(net).toLocaleString()}원</span>
                             </div>
                         `;
                     }
-                }
+                });
                 
                 if (!hasTx) {
                     txItemsHTML = '<div class="tx-empty">거래 내역 없음</div>';
@@ -1663,27 +1657,13 @@
             newTransactions.forEach(tx => {
                 const sender = state.players.find(p => p.id === tx.senderId);
                 const receiver = state.players.find(p => p.id === tx.receiverId);
-                
+
                 if (sender && receiver) {
-                    // Update individual balances
                     sender.balance -= tx.amount;
                     receiver.balance += tx.amount;
-                    
-                    // Record direct transactions (who owes who / who gets from who)
-                    if (!sender.giveDetails[tx.receiverId]) {
-                        sender.giveDetails[tx.receiverId] = 0;
-                    }
-                    sender.giveDetails[tx.receiverId] += tx.amount;
-                    
-                    if (!receiver.receiveDetails[tx.senderId]) {
-                        receiver.receiveDetails[tx.senderId] = 0;
-                    }
-                    receiver.receiveDetails[tx.senderId] += tx.amount;
+                    sender.transfers[tx.receiverId] = (sender.transfers[tx.receiverId] || 0) + tx.amount;
                 }
             });
-            
-            // Optimize transaction details (Simplify cash flows)
-            simplifyDebts();
             
             state.transactionsCount++;
             totalTransactionsEl.textContent = `${state.transactionsCount}회`;
@@ -1695,53 +1675,6 @@
             closeCalcModal();
         }
 
-        /**
-         * Debt Simplification Algorithm (Min Cash Flow)
-         */
-        function simplifyDebts() {
-            state.players.forEach(p => {
-                p.giveDetails = {};
-                p.receiveDetails = {};
-            });
-            
-            let participants = state.players.map(p => ({
-                id: p.id,
-                net: p.balance
-            }));
-            
-            let debtors = participants.filter(p => p.net < 0).sort((a, b) => a.net - b.net);
-            let creditors = participants.filter(p => p.net > 0).sort((a, b) => b.net - a.net);
-            
-            let dIdx = 0;
-            let cIdx = 0;
-            
-            while (dIdx < debtors.length && cIdx < creditors.length) {
-                let debtor = debtors[dIdx];
-                let creditor = creditors[cIdx];
-                
-                let debtAmount = Math.abs(debtor.net);
-                let creditAmount = creditor.net;
-                let settleAmount = Math.min(debtAmount, creditAmount);
-                
-                debtor.net += settleAmount;
-                creditor.net -= settleAmount;
-                
-                const debtorPlayer = state.players.find(p => p.id === debtor.id);
-                const creditorPlayer = state.players.find(p => p.id === creditor.id);
-                
-                if (debtorPlayer && creditorPlayer && settleAmount > 0) {
-                    debtorPlayer.giveDetails[creditorPlayer.id] = (debtorPlayer.giveDetails[creditorPlayer.id] || 0) + settleAmount;
-                    creditorPlayer.receiveDetails[debtorPlayer.id] = (creditorPlayer.receiveDetails[debtorPlayer.id] || 0) + settleAmount;
-                }
-                
-                if (Math.abs(debtor.net) < 1) {
-                    dIdx++;
-                }
-                if (creditor.net < 1) {
-                    cIdx++;
-                }
-            }
-        }
     </script>
 </body>
 </html>
