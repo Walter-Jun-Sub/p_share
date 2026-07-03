@@ -940,6 +940,7 @@
         }
 
         function endGame() {
+            if (!confirm('정말 게임을 종료하시겠습니까?\n지금까지의 정산 내역이 모두 사라집니다.')) return;
             clearState();
             renderExitSummary();
             dashboardScreen.classList.remove('active');
