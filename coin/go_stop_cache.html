@@ -716,6 +716,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- 5. 종료 확인 모달 -->
+        <div id="confirm-modal" class="modal-overlay">
+            <div class="glass-card modal-card" style="max-height: 300px; max-width: 350px;">
+                <div class="modal-header">
+                    <h3>⚠️ 게임 종료</h3>
+                    <button type="button" id="btn-close-confirm" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body" style="text-align: center; margin-top: 10px;">
+                    <p style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 15px; font-weight: 600;">정말 게임을 종료하시겠습니까?</p>
+                    <p class="modal-desc" style="color: #ff4757; font-weight: bold; opacity: 1;">지금까지의 정산 내역이 모두 사라집니다.</p>
+                </div>
+                <div class="modal-footer" style="justify-content: center; gap: 15px;">
+                    <button type="button" id="btn-confirm-cancel" class="btn btn-secondary">취소</button>
+                    <button type="button" id="btn-confirm-ok" class="btn btn-danger">종료</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -748,6 +766,10 @@
         const btnModalOk            = document.getElementById('btn-modal-ok');
         const btnAddRow             = document.getElementById('btn-add-row');
         const transactionsContainer = document.getElementById('transactions-container');
+        const confirmModal          = document.getElementById('confirm-modal');
+        const btnCloseConfirm       = document.getElementById('btn-close-confirm');
+        const btnConfirmCancel      = document.getElementById('btn-confirm-cancel');
+        const btnConfirmOk          = document.getElementById('btn-confirm-ok');
 
         // --- UTILITIES ---
 
@@ -860,8 +882,12 @@
 
             btnOpenCalc.addEventListener('click', openCalcModal);
             btnPrevScreen.addEventListener('click', goToSetupScreen);
-            btnEndGame.addEventListener('click', endGame);
+            btnEndGame.addEventListener('click', openConfirmModal);
             btnNewGame.addEventListener('click', goToSetupScreenFromExit);
+
+            btnCloseConfirm.addEventListener('click', closeConfirmModal);
+            btnConfirmCancel.addEventListener('click', closeConfirmModal);
+            btnConfirmOk.addEventListener('click', executeEndGame);
 
             btnCloseModal.addEventListener('click', closeCalcModal);
             btnModalCancel.addEventListener('click', closeCalcModal);
@@ -939,8 +965,16 @@
             }, 500);
         }
 
-        function endGame() {
-            if (!confirm('정말 게임을 종료하시겠습니까?\n지금까지의 정산 내역이 모두 사라집니다.')) return;
+        function openConfirmModal() {
+            confirmModal.classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            confirmModal.classList.remove('active');
+        }
+
+        function executeEndGame() {
+            closeConfirmModal();
             clearState();
             renderExitSummary();
             dashboardScreen.classList.remove('active');
@@ -1109,7 +1143,7 @@
                 </div>
                 <div class="tx-arrow">➔</div>
                 <div class="tx-amount-input">
-                    <input type="number" inputmode="numeric" class="input-amount" placeholder="금액 입력" min="0" step="100">
+                    <input type="text" inputmode="numeric" class="input-amount" placeholder="금액 입력">
                 </div>
                 <div class="tx-currency-label">원 보냄</div>
                 <button type="button" class="btn-remove-row" title="행 삭제">&times;</button>
@@ -1117,6 +1151,16 @@
 
             const selectSender   = row.querySelector('.select-sender');
             const selectReceiver = row.querySelector('.select-receiver');
+            const inputAmount    = row.querySelector('.input-amount');
+
+            inputAmount.addEventListener('input', (e) => {
+                let val = e.target.value.replace(/[^0-9]/g, '');
+                if (val) {
+                    e.target.value = parseInt(val, 10).toLocaleString();
+                } else {
+                    e.target.value = '';
+                }
+            });
 
             const preventSelfSelection = () => {
                 if (!selectSender.value || !selectReceiver.value) return;
@@ -1145,7 +1189,9 @@
             rows.forEach((row, index) => {
                 const senderId   = row.querySelector('.select-sender').value;
                 const receiverId = row.querySelector('.select-receiver').value;
-                const amountVal  = row.querySelector('.input-amount').value.trim();
+                let amountVal    = row.querySelector('.input-amount').value.trim();
+                
+                amountVal = amountVal.replace(/,/g, '');
 
                 if (!senderId || !receiverId) {
                     if (amountVal !== '' && parseInt(amountVal) > 0) {
