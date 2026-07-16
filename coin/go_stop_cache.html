@@ -858,7 +858,7 @@
             row.dataset.index = index;
 
             const randomAvatar = AVATARS[index % AVATARS.length];
-            const defaultName  = `플레이어${index + 1} (${FUN_NAMES[index % FUN_NAMES.length]})`;
+            const defaultName  = ['아빠(Dad)', '엄마(Mom)', '딸(Daughter)'][index] || `플레이어${index + 1}`;
 
             row.innerHTML = `
                 <div class="player-avatar" title="클릭해서 이모지 변경">${randomAvatar}</div>
